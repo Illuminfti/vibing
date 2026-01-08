@@ -16,6 +16,11 @@ module.exports = {
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .addSubcommand(subcommand =>
             subcommand
+                .setName('help')
+                .setDescription('show all admin commands and testing guide')
+        )
+        .addSubcommand(subcommand =>
+            subcommand
                 .setName('stats')
                 .setDescription('view detailed statistics')
         )
@@ -92,8 +97,12 @@ module.exports = {
         ),
 
     async execute(interaction) {
-        // Check for mod role
-        if (!hasRole(interaction.member, config.roles.mod)) {
+        // Check for mod role OR Discord Administrator permission
+        // This allows server admins to use commands even without MOD_ROLE_ID configured
+        const isDiscordAdmin = interaction.member.permissions.has(PermissionFlagsBits.Administrator);
+        const hasModRole = config.roles.mod && hasRole(interaction.member, config.roles.mod);
+
+        if (!isDiscordAdmin && !hasModRole) {
             const embed = new RitualEmbedBuilder('failure', { mood: 'normal' })
                 .setRitualDescription('you lack the authority for this.', false)
                 .build();
@@ -103,6 +112,9 @@ module.exports = {
         const subcommand = interaction.options.getSubcommand();
 
         switch (subcommand) {
+            case 'help':
+                await handleHelp(interaction);
+                break;
             case 'stats':
                 await handleStats(interaction);
                 break;
@@ -124,6 +136,55 @@ module.exports = {
         }
     },
 };
+
+async function handleHelp(interaction) {
+    const embed = new EmbedBuilder()
+        .setTitle('♰ Admin Commands ♰')
+        .setDescription(`Welcome to the Seven Gates admin system. Here are all available commands.\n\n` +
+            `**Quick Tip:** Use \`/admin-panel\` for the advanced testing interface with buttons & menus!`)
+        .setColor(0x9B59B6)
+        .addFields(
+            {
+                name: '📊 `/admin stats`',
+                value: 'View detailed server statistics:\n• Total users & ascended count\n• Gate completion numbers\n• First completions & avg time',
+                inline: false,
+            },
+            {
+                name: '🔄 `/admin reset <user>`',
+                value: 'Reset a user\'s progress completely:\n• Removes all gate roles\n• Clears database records\n• Use for fresh start testing',
+                inline: false,
+            },
+            {
+                name: '⏭️ `/admin advance <user> <gate>`',
+                value: 'Advance user to specific gate (1-7):\n• Assigns all roles up to that gate\n• Marks previous gates complete\n• Gate 4 starts Gate 5 sequence\n• Gate 7 ascends the user',
+                inline: false,
+            },
+            {
+                name: '✅ `/admin approve <user>`',
+                value: 'Manually approve pending submissions:\n• Gate 6 offerings\n• Gate 7 vows\n• Bypasses community voting',
+                inline: false,
+            },
+            {
+                name: '🧪 `/admin testmode <true/false>`',
+                value: 'Toggle test mode for Gate 5:\n• Reduces timer from 3min to 10sec\n• Useful for quick testing',
+                inline: false,
+            },
+            {
+                name: '📢 `/admin broadcast <gate> <message>`',
+                value: 'Send message to all users at a gate:\n• DMs all users with that gate role\n• Uses gate-specific theming',
+                inline: false,
+            },
+            {
+                name: '🔧 `/admin-panel` (Separate Command)',
+                value: 'Advanced testing panel with:\n• Trigger rare events & moods\n• Control gate progression\n• Inspect user state\n• Test mode toggles\n• Time manipulation\n• Quick test presets',
+                inline: false,
+            }
+        )
+        .setFooter({ text: 'You have admin access • Use responsibly' })
+        .setTimestamp();
+
+    await interaction.reply({ embeds: [embed], ephemeral: true });
+}
 
 async function handleStats(interaction) {
     await interaction.deferReply({ ephemeral: true });
