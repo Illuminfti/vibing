@@ -128,8 +128,9 @@ async function processGate5(interaction) {
  * Get user's Gate 5 progress
  */
 function getGate5Progress(discordId) {
+    const progress = gate5Ops.getProgress(discordId);
     return {
-        messagesSent: gate5Ops.getProgress(discordId),
+        messagesSent: progress?.messages_sent || 0,
         allSent: gate5Ops.allMessagesSent(discordId),
     };
 }

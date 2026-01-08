@@ -203,8 +203,8 @@ function startGate5Processor(client) {
                 gate5Ops.markSent(msg.id);
 
                 // Update user's message count
-                const currentCount = gate5Ops.getProgress(msg.discord_id);
-                userOps.update(msg.discord_id, 'gate_5_messages_sent', currentCount);
+                const progress = gate5Ops.getProgress(msg.discord_id);
+                userOps.update(msg.discord_id, 'gate_5_messages_sent', progress?.messages_sent || 0);
             }
         } catch (error) {
             console.error('Gate 5 processor error:', error);

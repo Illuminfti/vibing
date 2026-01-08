@@ -645,15 +645,38 @@ const gate5Ops = {
             .run(new Date().toISOString(), id);
     },
 
-    // Get user's progress
+    // Get user's progress (returns object with messages_sent)
     getProgress(discordId) {
+        const total = db.prepare('SELECT COUNT(*) as count FROM gate5_schedule WHERE discord_id = ?').get(discordId);
+        if (!total || total.count === 0) return null; // Not in gate 5
+
         const sent = db.prepare('SELECT COUNT(*) as count FROM gate5_schedule WHERE discord_id = ? AND sent = 1').get(discordId);
-        return sent.count;
+        return {
+            messages_sent: sent.count,
+            total_scheduled: total.count,
+        };
+    },
+
+    // Increment progress by marking next unsent message as sent
+    incrementProgress(discordId) {
+        const next = db.prepare(`
+            SELECT id FROM gate5_schedule
+            WHERE discord_id = ? AND sent = 0
+            ORDER BY message_number
+            LIMIT 1
+        `).get(discordId);
+
+        if (next) {
+            this.markSent(next.id);
+            return true;
+        }
+        return false;
     },
 
     // Check if all messages sent
     allMessagesSent(discordId) {
-        return this.getProgress(discordId) >= 6;
+        const progress = this.getProgress(discordId);
+        return progress && progress.messages_sent >= 6;
     },
 
     // Clear schedule for user
@@ -1809,6 +1832,21 @@ const fragmentLogOps = {
 
 // Gate progress operations (wrapper for gate-related queries)
 const gateOps = {
+    // Get current gate (highest completed + 1)
+    getCurrentGate(discordId) {
+        return userOps.getCurrentGate(discordId);
+    },
+
+    // Complete a gate
+    complete(discordId, gateNumber, extraData = {}) {
+        return userOps.completeGate(discordId, gateNumber, extraData);
+    },
+
+    // Check if user has completed a gate
+    hasCompleted(discordId, gateNumber) {
+        return userOps.hasCompletedGate(discordId, gateNumber);
+    },
+
     // Get user's gate progress details
     getProgress(discordId) {
         const user = userOps.get(discordId);
