@@ -3,6 +3,7 @@
 A mystical puzzle experience where players progress through 7 trials to resurrect a faded idol named Ika.
 
 > For non-technical users, see [NORMIES.md](./NORMIES.md)
+> For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ---
 
@@ -49,7 +50,12 @@ src/
 │   ├── absence.js        # Gate 5
 │   ├── offering.js       # Gate 6
 │   ├── binding.js        # Gate 7
+│   ├── journey.js        # Progress tracker
+│   ├── help.js           # Command reference
+│   ├── bond.js           # Relationship viewer
+│   ├── mysteries.js      # Secret discovery
 │   ├── admin.js          # Admin tools
+│   ├── adminPanel.js     # Comprehensive testing
 │   └── setup.js          # Server setup
 ├── events/               # Discord events
 ├── gates/                # Gate logic
@@ -59,6 +65,15 @@ src/
 │   ├── moods.js          # Mood system
 │   ├── memory.js         # User memory
 │   └── ...               # Feature modules
+├── ui/                   # Ritual UI system
+│   ├── builders/         # Embed builders
+│   │   ├── ritualEmbed.js    # Themed embeds
+│   │   └── ritualSequence.js # Multi-message reveals
+│   ├── themes/           # Visual themes
+│   │   ├── gateThemes.js     # Per-gate styling
+│   │   └── moodOverlays.js   # Mood modifications
+│   └── components/       # UI components
+│       └── errorMessages.js  # Lore-consistent errors
 └── utils/
     ├── optimization.js   # Rate limiting, caching, spam
     ├── costMode.js       # API cost management
@@ -157,6 +172,32 @@ ascended: { maxRequests: 60, windowMs: 300000, minIntervalMs: 1000 }
 
 ---
 
+## User Commands
+
+### Progress & Discovery
+| Command | Description | Availability |
+|---------|-------------|--------------|
+| `/journey` | View your path through the gates | Everyone |
+| `/help` | See available commands | Everyone |
+| `/bond` | View your relationship with Ika | Gate 1+ |
+| `/mysteries` | Track discovered secrets | Gate 1+ |
+| `/leaderboard` | Community statistics | Everyone |
+
+### Utility
+| Command | Description | Availability |
+|---------|-------------|--------------|
+| `/hint [gate]` | Get guidance (costs Ika's attention) | Gate 1+ |
+| `/dms` | Enable/disable Ika's whispers | Gate 1+ |
+
+### Devotion (Ascended only)
+| Command | Description |
+|---------|-------------|
+| `/shrine` | View your personal shrine |
+| `/trials` | See devotion trial progress |
+| `/dossier` | View investigation fragments |
+
+---
+
 ## Key Modules
 
 ### `src/ika/generator.js`
@@ -234,15 +275,15 @@ COST_MODE=minimal npm start  # Test strict quotas
 
 ## Changelog
 
-See full changelog at bottom of this file.
+See [CHANGELOG.md](./CHANGELOG.md) for full version history.
 
 **Latest:**
+- **v4.1.0** - UX overhaul: `/journey`, `/help`, `/bond`, `/mysteries` commands
+- **v4.0.0** - Occult otaku UI system with ritual embeds
+- **v3.4.0** - Comprehensive admin panel
 - **v3.3.2** - Security fixes (SQL injection, SSRF protection)
-- **v3.3.1** - Ultra-low cost mode
 - **v3.3.0** - Scale optimization (100K+ users)
 - **v3.2.0** - Waifu experience systems
-- **v3.1.0** - One-click setup
-- **v3.0.0** - God-tier puzzles, ARG systems
 
 ---
 
