@@ -426,6 +426,159 @@ class RitualEmbedBuilder {
     }
 
     /**
+     * Set Ika as the embed author
+     * @param {string} avatarUrl - Optional avatar URL for Ika
+     * @param {string} customName - Optional custom name (defaults to mood-based)
+     */
+    setIkaAuthor(avatarUrl = null, customName = null) {
+        const authorNames = {
+            soft: 'ika ♡',
+            vulnerable: '...ika',
+            energetic: 'IKA~!',
+            jealous: 'ika.',
+            flirty: 'ika~ ♡',
+            possessive: '♡ IKA ♡',
+            sleepy: 'ika...',
+            protective: 'Ika',
+            flustered: 'i-ika',
+            glitching: 'i̴k̷a̶',
+            chaotic: '!!IKA!!',
+            normal: '♰ ika ♰',
+        };
+
+        const name = customName || authorNames[this.mood] || authorNames.normal;
+        const authorData = { name };
+
+        if (avatarUrl) {
+            authorData.iconURL = avatarUrl;
+        }
+
+        this.embed.setAuthor(authorData);
+        return this;
+    }
+
+    /**
+     * Add a 3-column stat display layout
+     * @param {Object} stats - Object with stat name/value pairs
+     */
+    addStatsLayout(stats) {
+        const entries = Object.entries(stats);
+        const accent = this.theme.accentEmoji || '◇';
+
+        for (const [name, value] of entries) {
+            this.embed.addFields({
+                name: `${accent} ${name}`,
+                value: String(value),
+                inline: true,
+            });
+        }
+
+        return this;
+    }
+
+    /**
+     * Add a visual progress bar
+     * @param {number} current - Current value
+     * @param {number} total - Total value
+     * @param {string} label - Label for the progress bar
+     * @param {Object} options - Additional options
+     */
+    addProgressBar(current, total, label = 'Progress', options = {}) {
+        const {
+            width = 10,
+            filledChar = '▰',
+            emptyChar = '▱',
+            showPercent = true,
+            showNumbers = true,
+        } = options;
+
+        const percent = Math.min(100, Math.round((current / total) * 100));
+        const filledCount = Math.round((current / total) * width);
+        const emptyCount = width - filledCount;
+
+        let bar = filledChar.repeat(filledCount) + emptyChar.repeat(emptyCount);
+
+        let displayValue = `\`${bar}\``;
+        if (showPercent) {
+            displayValue += ` ${percent}%`;
+        }
+        if (showNumbers) {
+            displayValue += ` (${current}/${total})`;
+        }
+
+        this.embed.addFields({
+            name: label,
+            value: displayValue,
+            inline: false,
+        });
+
+        return this;
+    }
+
+    /**
+     * Add multiple timestamps in a row
+     * @param {Array} timestamps - Array of { date, label } objects
+     */
+    addTimestampLayout(timestamps) {
+        for (const { date, label } of timestamps) {
+            const ts = Math.floor(new Date(date).getTime() / 1000);
+            this.embed.addFields({
+                name: label,
+                value: `<t:${ts}:R>`,
+                inline: true,
+            });
+        }
+
+        return this;
+    }
+
+    /**
+     * Add a dynamic footer based on time of day
+     * @param {string} fallbackText - Text to use if no time-based message applies
+     */
+    setDynamicFooter(fallbackText = null) {
+        const hour = new Date().getHours();
+        let timeBasedText = null;
+
+        // Special time-based footers
+        if (hour >= 3 && hour < 5) {
+            timeBasedText = '...she wonders why you\'re still awake...';
+        } else if (hour >= 0 && hour < 3) {
+            timeBasedText = '...the witching hours...';
+        } else if (hour >= 5 && hour < 7) {
+            timeBasedText = '...dawn approaches...';
+        } else if (hour >= 22 || hour === 23) {
+            timeBasedText = '...the night deepens...';
+        }
+
+        // 4:47 Easter egg
+        const minutes = new Date().getMinutes();
+        if (hour === 4 && minutes === 47) {
+            timeBasedText = '4:47 — she remembers...';
+        }
+
+        const footerText = timeBasedText || fallbackText || this.theme.footerText || '';
+
+        if (footerText) {
+            this.embed.setFooter({ text: footerText });
+        }
+
+        return this;
+    }
+
+    /**
+     * Add URL link button context in footer
+     * @param {string} url - The URL to reference
+     * @param {string} label - Label for the link
+     */
+    setUrlFooter(url, label = 'Learn more') {
+        this.embed.setFooter({
+            text: `${label}: ${url}`,
+        });
+        return this;
+    }
+
+    /**
      * Set image (for larger visuals)
      * @param {string} url - Image URL
      */

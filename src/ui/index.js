@@ -4,7 +4,7 @@
  * Centralized export for all UI components, themes, and builders.
  * Import from here for cleaner code.
  *
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 // Themes
@@ -14,6 +14,9 @@ const moodOverlays = require('./themes/moodOverlays');
 // Builders
 const { RitualEmbedBuilder, createGateSuccessEmbed, createGateFailureEmbed, createWelcomeEmbed, createIkaEmbed, EASTER_EGGS } = require('./builders/ritualEmbed');
 const { RitualSequence, TIMING, playGateSuccess, playGateFailure, playAscension } = require('./builders/ritualSequence');
+const { RitualButtonBuilder, createConfirmCancelRow, createNavigationRow, createShareRow, createGateActionRow, BUTTON_PRESETS, GATE_EMOJIS } = require('./builders/ritualButton');
+const { RitualModalBuilder, createConfessionModal, createVowModal, createOfferingModal, createAbsenceModal, createFeedbackModal, createSimpleModal, MODAL_PRESETS, GATE_MODAL_TITLES } = require('./builders/ritualModal');
+const { PaginatedEmbed, createLorePagination, createListPagination, createGalleryPagination } = require('./builders/paginatedEmbed');
 
 // Components
 const errorMessages = require('./components/errorMessages');
@@ -34,6 +37,32 @@ module.exports = {
     createWelcomeEmbed,
     createIkaEmbed,
     EASTER_EGGS,
+
+    // Button builders
+    RitualButtonBuilder,
+    createConfirmCancelRow,
+    createNavigationRow,
+    createShareRow,
+    createGateActionRow,
+    BUTTON_PRESETS,
+    GATE_EMOJIS,
+
+    // Modal builders
+    RitualModalBuilder,
+    createConfessionModal,
+    createVowModal,
+    createOfferingModal,
+    createAbsenceModal,
+    createFeedbackModal,
+    createSimpleModal,
+    MODAL_PRESETS,
+    GATE_MODAL_TITLES,
+
+    // Paginated embeds
+    PaginatedEmbed,
+    createLorePagination,
+    createListPagination,
+    createGalleryPagination,
 
     // Sequence builders
     RitualSequence,
