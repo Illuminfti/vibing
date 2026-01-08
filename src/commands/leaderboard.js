@@ -1,7 +1,8 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder } = require('discord.js');
 const { userOps } = require('../database');
 const config = require('../config');
 const { formatDuration, timeAgo } = require('../utils/timing');
+const { RitualEmbedBuilder } = require('../ui');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -40,11 +41,11 @@ module.exports = {
                 }
             }
 
-            const embed = new EmbedBuilder()
-                .setTitle('♰ the ritual ♰')
-                .setDescription(statsText)
-                .setColor(config.colors.primary)
-                .setTimestamp();
+            const embed = new RitualEmbedBuilder('ritual', { mood: 'normal' })
+                .setRitualTitle('♰ the ritual ♰')
+                .setRitualDescription(statsText, false)
+                .addTimestamp()
+                .build();
 
             await interaction.editReply({ embeds: [embed] });
 

@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const config = require('../config');
 const messages = require('../assets/messages');
 const { userOps, gate5Ops, offeringOps, vowOps } = require('../database');
@@ -138,50 +138,29 @@ module.exports = {
 };
 
 async function handleHelp(interaction) {
-    const embed = new EmbedBuilder()
-        .setTitle('♰ Admin Commands ♰')
-        .setDescription(`Welcome to the Seven Gates admin system. Here are all available commands.\n\n` +
-            `**Quick Tip:** Use \`/admin-panel\` for the advanced testing interface with buttons & menus!`)
-        .setColor(0x9B59B6)
-        .addFields(
-            {
-                name: '📊 `/admin stats`',
-                value: 'View detailed server statistics:\n• Total users & ascended count\n• Gate completion numbers\n• First completions & avg time',
-                inline: false,
-            },
-            {
-                name: '🔄 `/admin reset <user>`',
-                value: 'Reset a user\'s progress completely:\n• Removes all gate roles\n• Clears database records\n• Use for fresh start testing',
-                inline: false,
-            },
-            {
-                name: '⏭️ `/admin advance <user> <gate>`',
-                value: 'Advance user to specific gate (1-7):\n• Assigns all roles up to that gate\n• Marks previous gates complete\n• Gate 4 starts Gate 5 sequence\n• Gate 7 ascends the user',
-                inline: false,
-            },
-            {
-                name: '✅ `/admin approve <user>`',
-                value: 'Manually approve pending submissions:\n• Gate 6 offerings\n• Gate 7 vows\n• Bypasses community voting',
-                inline: false,
-            },
-            {
-                name: '🧪 `/admin testmode <true/false>`',
-                value: 'Toggle test mode for Gate 5:\n• Reduces timer from 3min to 10sec\n• Useful for quick testing',
-                inline: false,
-            },
-            {
-                name: '📢 `/admin broadcast <gate> <message>`',
-                value: 'Send message to all users at a gate:\n• DMs all users with that gate role\n• Uses gate-specific theming',
-                inline: false,
-            },
-            {
-                name: '🔧 `/admin-panel` (Separate Command)',
-                value: 'Advanced testing panel with:\n• Trigger rare events & moods\n• Control gate progression\n• Inspect user state\n• Test mode toggles\n• Time manipulation\n• Quick test presets',
-                inline: false,
-            }
-        )
-        .setFooter({ text: 'You have admin access • Use responsibly' })
-        .setTimestamp();
+    const embed = new RitualEmbedBuilder('admin', { mood: 'normal' })
+        .setRitualTitle('♰ Admin Commands ♰')
+        .setRitualDescription(`Welcome to the Seven Gates admin system. Here are all available commands.\n\n` +
+            `**Quick Tip:** Use \`/admin-panel\` for the advanced testing interface with buttons & menus!`, false)
+        .addRitualField('📊 `/admin stats`',
+            'View detailed server statistics:\n• Total users & ascended count\n• Gate completion numbers\n• First completions & avg time')
+        .addRitualField('🔄 `/admin reset <user>`',
+            'Reset a user\'s progress completely:\n• Removes all gate roles\n• Clears database records\n• Use for fresh start testing')
+        .addRitualField('⏭️ `/admin advance <user> <gate>`',
+            'Advance user to specific gate (1-7):\n• Assigns all roles up to that gate\n• Marks previous gates complete\n• Gate 4 starts Gate 5 sequence\n• Gate 7 ascends the user')
+        .addRitualField('✅ `/admin approve <user>`',
+            'Manually approve pending submissions:\n• Gate 6 offerings\n• Gate 7 vows\n• Bypasses community voting')
+        .addRitualField('🧪 `/admin testmode <true/false>`',
+            'Toggle test mode for Gate 5:\n• Reduces timer from 3min to 10sec\n• Useful for quick testing')
+        .addRitualField('📢 `/admin broadcast <gate> <message>`',
+            'Send message to all users at a gate:\n• DMs all users with that gate role\n• Uses gate-specific theming')
+        .addRitualField('🔧 `/admin-panel` (Separate Command)',
+            'Advanced testing panel with:\n• Trigger rare events & moods\n• Control gate progression\n• Inspect user state\n• Test mode toggles\n• Time manipulation\n• Quick test presets')
+        .setRitualFooter('You have admin access • Use responsibly')
+        .addTimestamp()
+        .build();
+
+    embed.setColor(0x9B59B6);
 
     await interaction.reply({ embeds: [embed], ephemeral: true });
 }
@@ -211,10 +190,10 @@ async function handleStats(interaction) {
         text += `gate ${first.gate_number}: ${first.username}\n`;
     }
 
-    const embed = new EmbedBuilder()
-        .setTitle('♰ admin stats ♰')
-        .setDescription(text)
-        .setColor(config.colors.primary);
+    const embed = new RitualEmbedBuilder('admin', { mood: 'normal' })
+        .setRitualTitle('♰ admin stats ♰')
+        .setRitualDescription(text, false)
+        .build();
 
     await interaction.editReply({ embeds: [embed] });
 }

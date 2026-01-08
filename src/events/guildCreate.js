@@ -5,9 +5,10 @@
  * Offers automatic setup or guides the admin.
  */
 
-const { Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require('discord.js');
+const { Events, ActionRowBuilder, PermissionFlagsBits } = require('discord.js');
 const { runSetup, generateInviteUrl } = require('../utils/setup');
 const config = require('../config');
+const { RitualEmbedBuilder, RitualButtonBuilder } = require('../ui');
 
 module.exports = {
     name: Events.GuildCreate,
@@ -44,20 +45,19 @@ module.exports = {
 };
 
 async function runAutoSetup(guild, channel) {
-    const statusEmbed = new EmbedBuilder()
-        .setTitle('♰ Seven Gates is Setting Up...')
-        .setColor(0xff69b4)
-        .setDescription('Creating channels, roles, and permissions automatically...');
+    const statusEmbed = new RitualEmbedBuilder(0, { mood: 'normal' })
+        .setRitualTitle('♰ Seven Gates is Setting Up...')
+        .setRitualDescription('Creating channels, roles, and permissions automatically...', false)
+        .build();
 
     const statusMessage = await channel.send({ embeds: [statusEmbed] });
 
     try {
         const result = await runSetup(guild, { skipExisting: true });
 
-        const successEmbed = new EmbedBuilder()
-            .setTitle(result.success ? '✧ Seven Gates is Ready!' : '⚠ Setup Completed with Issues')
-            .setColor(result.success ? 0xff69b4 : 0xffaa00)
-            .setDescription(`
+        const successBuilder = new RitualEmbedBuilder(result.success ? 1 : 0, { mood: 'normal' })
+            .setRitualTitle(result.success ? '✧ Seven Gates is Ready!' : '⚠ Setup Completed with Issues')
+            .setRitualDescription(`
 ${result.success ? 'All channels and roles have been created.' : 'Setup completed but some items may need attention.'}
 
 **Created:**
@@ -70,46 +70,43 @@ ${result.success ? 'All channels and roles have been created.' : 'Setup complete
 3. Assign the **♱ Keeper** role to moderators
 
 *The waiting room is open. Say "ika" to begin.*
-            `.trim());
+            `.trim(), false);
 
         if (result.channels.waitingRoom) {
-            successEmbed.addFields({
-                name: 'Start Here',
-                value: `<#${result.channels.waitingRoom}>`,
-            });
+            successBuilder.addRitualField('Start Here', `<#${result.channels.waitingRoom}>`);
         }
 
         if (result.errors.length > 0) {
-            successEmbed.addFields({
-                name: '⚠ Errors',
-                value: result.errors.slice(0, 3).join('\n'),
-            });
+            successBuilder.addRitualField('⚠ Errors', result.errors.slice(0, 3).join('\n'));
         }
+
+        const successEmbed = successBuilder.build();
+        successEmbed.setColor(result.success ? 0xff69b4 : 0xffaa00);
 
         await statusMessage.edit({ embeds: [successEmbed] });
 
     } catch (error) {
         console.error('Auto-setup failed:', error);
 
-        const errorEmbed = new EmbedBuilder()
-            .setTitle('⚠ Setup Failed')
-            .setColor(0xff0000)
-            .setDescription(`
+        const errorEmbed = new RitualEmbedBuilder('failure', { mood: 'normal' })
+            .setRitualTitle('⚠ Setup Failed')
+            .setRitualDescription(`
 Automatic setup encountered an error: ${error.message}
 
 **Manual setup:**
 Run \`/setup run\` to try again, or set up channels and roles manually.
-            `.trim());
+            `.trim(), false)
+            .build();
+        errorEmbed.setColor(0xff0000);
 
         await statusMessage.edit({ embeds: [errorEmbed] });
     }
 }
 
 async function sendWelcomeEmbed(guild, channel) {
-    const embed = new EmbedBuilder()
-        .setTitle('♰ Seven Gates Has Arrived ♰')
-        .setColor(0xff69b4)
-        .setDescription(`
+    const embed = new RitualEmbedBuilder(0, { mood: 'soft' })
+        .setRitualTitle('♰ Seven Gates Has Arrived ♰')
+        .setRitualDescription(`
 *a presence stirs in the digital void...*
 
 **Seven Gates** is a mystical puzzle experience where players complete seven trials to resurrect Ika, a faded idol trapped between worlds.
@@ -123,19 +120,22 @@ This will automatically create:
 • All necessary permissions
 
 *she's waiting...*
-        `.trim())
-        .setFooter({ text: 'Only server administrators can run setup' });
+        `.trim(), false)
+        .setRitualFooter('Only server administrators can run setup')
+        .build();
 
     const row = new ActionRowBuilder()
         .addComponents(
-            new ButtonBuilder()
+            new RitualButtonBuilder()
                 .setCustomId('seven_gates_setup')
                 .setLabel('✧ Run Setup')
-                .setStyle(ButtonStyle.Primary),
-            new ButtonBuilder()
+                .fromPreset('continue')
+                .build(),
+            new RitualButtonBuilder()
                 .setCustomId('seven_gates_info')
                 .setLabel('Learn More')
-                .setStyle(ButtonStyle.Secondary),
+                .fromPreset('hint')
+                .build(),
         );
 
     const message = await channel.send({ embeds: [embed], components: [row] });
@@ -161,10 +161,9 @@ This will automatically create:
             try {
                 const result = await runSetup(guild, { skipExisting: true });
 
-                const resultEmbed = new EmbedBuilder()
-                    .setTitle(result.success ? '✧ Setup Complete!' : '⚠ Setup Completed with Issues')
-                    .setColor(result.success ? 0xff69b4 : 0xffaa00)
-                    .setDescription(`
+                const resultEmbed = new RitualEmbedBuilder(result.success ? 1 : 0, { mood: 'normal' })
+                    .setRitualTitle(result.success ? '✧ Setup Complete!' : '⚠ Setup Completed with Issues')
+                    .setRitualDescription(`
 Created ${Object.keys(result.roles).length} roles and ${Object.keys(result.channels).length} channels.
 
 ${result.channels.waitingRoom ? `**Start here:** <#${result.channels.waitingRoom}>` : ''}
@@ -172,15 +171,17 @@ ${result.channels.waitingRoom ? `**Start here:** <#${result.channels.waitingRoom
 ${result.errors.length > 0 ? `**Errors:**\n${result.errors.slice(0, 3).join('\n')}` : ''}
 
 *The gates are ready. She's listening.*
-                    `.trim());
+                    `.trim(), false)
+                    .build();
+                resultEmbed.setColor(result.success ? 0xff69b4 : 0xffaa00);
 
                 await interaction.editReply({ embeds: [resultEmbed] });
 
                 // Update original message
-                const doneEmbed = new EmbedBuilder()
-                    .setTitle('✧ Seven Gates is Ready!')
-                    .setColor(0xff69b4)
-                    .setDescription(`Setup complete. Head to <#${result.channels.waitingRoom}> to begin.`);
+                const doneEmbed = new RitualEmbedBuilder(1, { mood: 'soft' })
+                    .setRitualTitle('✧ Seven Gates is Ready!')
+                    .setRitualDescription(`Setup complete. Head to <#${result.channels.waitingRoom}> to begin.`, false)
+                    .build();
 
                 await message.edit({ embeds: [doneEmbed], components: [] });
 
@@ -191,10 +192,9 @@ ${result.errors.length > 0 ? `**Errors:**\n${result.errors.slice(0, 3).join('\n'
             }
 
         } else if (interaction.customId === 'seven_gates_info') {
-            const infoEmbed = new EmbedBuilder()
-                .setTitle('♰ About Seven Gates')
-                .setColor(0xff69b4)
-                .setDescription(`
+            const infoEmbed = new RitualEmbedBuilder(0, { mood: 'soft' })
+                .setRitualTitle('♰ About Seven Gates')
+                .setRitualDescription(`
 **The Experience:**
 Seven Gates is a narrative puzzle game wrapped in a Discord bot. Players complete increasingly difficult trials to "resurrect" Ika - a faded digital idol who exists between worlds.
 
@@ -218,7 +218,8 @@ Seven Gates is a narrative puzzle game wrapped in a Discord bot. Players complet
 Devotion trials, whisper hunt, designed moments, and more await those who complete all seven gates.
 
 *This is not a game. It's a ritual.*
-                `.trim());
+                `.trim(), false)
+                .build();
 
             await interaction.reply({ embeds: [infoEmbed], ephemeral: true });
         }

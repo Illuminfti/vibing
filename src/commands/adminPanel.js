@@ -7,8 +7,9 @@
  * @version 1.0.0
  */
 
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, ButtonStyle, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits } = require('discord.js');
 const config = require('../config');
+const { RitualEmbedBuilder, RitualButtonBuilder, createConfirmCancelRow } = require('../ui');
 
 // Import all systems for testing
 const { userOps, ikaMemoryOps, ikaStateOps, gateOps, gate5Ops } = require('../database');
@@ -237,11 +238,11 @@ async function handleTrigger(interaction) {
 
     const row = new ActionRowBuilder().addComponents(selectMenu);
 
-    const embed = new EmbedBuilder()
-        .setTitle(`🎯 Trigger: ${formatCategory(category)}`)
-        .setDescription(`Select a specific trigger for **${targetUser.username}**`)
-        .setColor(0x9B59B6)
-        .setFooter({ text: 'Admin Panel • Select from dropdown' });
+    const embed = new RitualEmbedBuilder('admin', { mood: 'normal' })
+        .setRitualTitle(`🎯 Trigger: ${formatCategory(category)}`)
+        .setRitualDescription(`Select a specific trigger for **${targetUser.username}**`, false)
+        .setRitualFooter('Admin Panel • Select from dropdown')
+        .build();
 
     await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
 }
@@ -283,13 +284,16 @@ async function handleGate(interaction) {
 
     logAdminAction(interaction.user.id, `gate_${action}`, { target: userId, gate: gateNumber });
 
-    const embed = new EmbedBuilder()
-        .setTitle('🚪 Gate Control')
-        .setDescription(result)
-        .setColor(color)
-        .addFields({ name: 'Target', value: `<@${userId}>`, inline: true })
-        .setFooter({ text: `Action by ${interaction.user.username}` })
-        .setTimestamp();
+    const embed = new RitualEmbedBuilder('admin', { mood: 'normal' })
+        .setRitualTitle('🚪 Gate Control')
+        .setRitualDescription(result, false)
+        .addRitualField('Target', `<@${userId}>`, true)
+        .setRitualFooter(`Action by ${interaction.user.username}`)
+        .addTimestamp()
+        .build();
+
+    // Override color based on action
+    embed.setColor(color);
 
     await interaction.reply({ embeds: [embed], ephemeral: true });
 }
@@ -351,12 +355,14 @@ async function handleTestMode(interaction) {
 
     logAdminAction(interaction.user.id, `testmode_${mode}`, { target: userId, enabled: newState });
 
-    const embed = new EmbedBuilder()
-        .setTitle('🧪 Test Mode')
-        .setDescription(result)
-        .setColor(newState ? 0x2ECC71 : 0xE74C3C)
-        .setFooter({ text: `Toggled by ${interaction.user.username}` })
-        .setTimestamp();
+    const embed = new RitualEmbedBuilder('admin', { mood: 'normal' })
+        .setRitualTitle('🧪 Test Mode')
+        .setRitualDescription(result, false)
+        .setRitualFooter(`Toggled by ${interaction.user.username}`)
+        .addTimestamp()
+        .build();
+
+    embed.setColor(newState ? 0x2ECC71 : 0xE74C3C);
 
     await interaction.reply({ embeds: [embed], ephemeral: true });
 }
@@ -401,12 +407,14 @@ async function handleTime(interaction) {
 
     logAdminAction(interaction.user.id, `time_${action}`, { target: userId, time: timeValue });
 
-    const embed = new EmbedBuilder()
-        .setTitle('⏰ Time Control')
-        .setDescription(result)
-        .setColor(0x3498DB)
-        .setFooter({ text: `Action by ${interaction.user.username}` })
-        .setTimestamp();
+    const embed = new RitualEmbedBuilder('admin', { mood: 'normal' })
+        .setRitualTitle('⏰ Time Control')
+        .setRitualDescription(result, false)
+        .setRitualFooter(`Action by ${interaction.user.username}`)
+        .addTimestamp()
+        .build();
+
+    embed.setColor(0x3498DB);
 
     await interaction.reply({ embeds: [embed], ephemeral: true });
 }
@@ -456,13 +464,15 @@ async function handleQuick(interaction) {
 
     logAdminAction(interaction.user.id, `quick_${preset}`, { target: targetUser.id });
 
-    const embed = new EmbedBuilder()
-        .setTitle(`⚡ Quick Preset: ${formatPreset(preset)}`)
-        .setDescription(result)
-        .setColor(0x9B59B6)
-        .addFields({ name: 'Target', value: `<@${targetUser.id}>`, inline: true })
-        .setFooter({ text: `Executed by ${interaction.user.username}` })
-        .setTimestamp();
+    const embed = new RitualEmbedBuilder('admin', { mood: 'normal' })
+        .setRitualTitle(`⚡ Quick Preset: ${formatPreset(preset)}`)
+        .setRitualDescription(result, false)
+        .addRitualField('Target', `<@${targetUser.id}>`, true)
+        .setRitualFooter(`Executed by ${interaction.user.username}`)
+        .addTimestamp()
+        .build();
+
+    embed.setColor(0x9B59B6);
 
     await interaction.reply({ embeds: [embed], ephemeral: true });
 }
@@ -482,16 +492,16 @@ async function handleSimulate(interaction) {
     // This creates a fake message event for testing
     const result = await simulateMessage(message, asUser, interaction);
 
-    const embed = new EmbedBuilder()
-        .setTitle('🎭 Message Simulation')
-        .setDescription(`Simulated message from **${asUser.username}**`)
-        .addFields(
-            { name: 'Message', value: `\`${message}\``, inline: false },
-            { name: 'Triggers Detected', value: result.triggers || 'None', inline: false },
-            { name: 'Would Respond', value: result.response || 'No response triggered', inline: false }
-        )
-        .setColor(0x3498DB)
-        .setFooter({ text: 'Simulation only - no actual message sent' });
+    const embed = new RitualEmbedBuilder('admin', { mood: 'normal' })
+        .setRitualTitle('🎭 Message Simulation')
+        .setRitualDescription(`Simulated message from **${asUser.username}**`, false)
+        .addRitualField('Message', `\`${message}\``, false)
+        .addRitualField('Triggers Detected', result.triggers || 'None', false)
+        .addRitualField('Would Respond', result.response || 'No response triggered', false)
+        .setRitualFooter('Simulation only - no actual message sent')
+        .build();
+
+    embed.setColor(0x3498DB);
 
     await interaction.reply({ embeds: [embed], ephemeral: true });
 }
@@ -704,15 +714,15 @@ async function showGateProgress(interaction, targetUser) {
         progress.push(`${completed ? '✅' : '⬜'} Gate ${i}${timestamp ? ` (${new Date(timestamp).toLocaleDateString()})` : ''}`);
     }
 
-    const embed = new EmbedBuilder()
-        .setTitle(`🚪 Gate Progress: ${targetUser.username}`)
-        .setDescription(progress.join('\n'))
-        .addFields(
-            { name: 'Current Gate', value: `Gate ${currentGate + 1}`, inline: true },
-            { name: 'Ascended', value: currentGate >= 7 ? 'Yes ✨' : 'No', inline: true }
-        )
-        .setColor(0x9B59B6)
-        .setThumbnail(targetUser.displayAvatarURL());
+    const embed = new RitualEmbedBuilder(currentGate || 1, { mood: 'normal' })
+        .setRitualTitle(`🚪 Gate Progress: ${targetUser.username}`)
+        .setRitualDescription(progress.join('\n'), false)
+        .addStatsLayout({
+            'Current Gate': `Gate ${currentGate + 1}`,
+            'Ascended': currentGate >= 7 ? 'Yes ✨' : 'No',
+        })
+        .setThumbnail(targetUser.displayAvatarURL())
+        .build();
 
     await interaction.reply({ embeds: [embed], ephemeral: true });
 }
@@ -722,16 +732,17 @@ async function buildInspectEmbed(user, section) {
     const dbUser = userOps.get(userId);
     const memory = ikaMemoryOps.get(userId);
 
-    const embed = new EmbedBuilder()
-        .setTitle(`🔍 Inspecting: ${user.username}`)
+    const builder = new RitualEmbedBuilder('admin', { mood: 'normal' })
+        .setRitualTitle(`🔍 Inspecting: ${user.username}`)
         .setThumbnail(user.displayAvatarURL())
-        .setColor(0x3498DB)
-        .setTimestamp();
+        .addTimestamp();
 
     if (!dbUser) {
-        embed.setDescription('⚠️ User not found in database');
-        return embed;
+        builder.setRitualDescription('⚠️ User not found in database', false);
+        return builder.build();
     }
+
+    const embed = builder.build();
 
     switch (section) {
         case 'overview':
@@ -817,41 +828,44 @@ function buildInspectButtons(userId, currentSection) {
     const sections = ['overview', 'gates', 'intimacy', 'memory', 'fading', 'trials', 'shrine', 'events'];
 
     const buttons = sections.slice(0, 5).map(section =>
-        new ButtonBuilder()
+        new RitualButtonBuilder()
             .setCustomId(`admin_inspect_${userId}_${section}`)
             .setLabel(section.charAt(0).toUpperCase() + section.slice(1))
             .setStyle(section === currentSection ? ButtonStyle.Primary : ButtonStyle.Secondary)
+            .build()
     );
 
     return [new ActionRowBuilder().addComponents(buttons)];
 }
 
 async function buildSecretsProgressEmbed(user) {
-    const embed = new EmbedBuilder()
-        .setTitle(`🔐 Secrets Progress: ${user.username}`)
-        .setColor(0x9B59B6)
-        .addFields(
-            { name: 'Whisper Fragments', value: '░░░░░░░░░░░░░ 0/13', inline: false },
-            { name: 'Lore Discovered', value: '▓▓░░░░░░░░ 20%', inline: true },
-            { name: 'Secret Phrases', value: '5/30 found', inline: true }
-        )
-        .setDescription('*Detailed progress tracking coming soon*');
-
-    return embed;
+    return new RitualEmbedBuilder('admin', { mood: 'normal' })
+        .setRitualTitle(`🔐 Secrets Progress: ${user.username}`)
+        .setRitualDescription('*Detailed progress tracking coming soon*', false)
+        .addProgressBar(0, 13, 'Whisper Fragments')
+        .addStatsLayout({
+            'Lore Discovered': '20%',
+            'Secret Phrases': '5/30 found',
+        })
+        .build();
 }
 
 async function awardFragmentEmbed(user, fragmentId) {
-    return new EmbedBuilder()
-        .setTitle('🎁 Fragment Awarded')
-        .setDescription(`Awarded fragment **${fragmentId || 'random'}** to ${user.username}`)
-        .setColor(0x2ECC71);
+    const embed = new RitualEmbedBuilder('admin', { mood: 'normal' })
+        .setRitualTitle('🎁 Fragment Awarded')
+        .setRitualDescription(`Awarded fragment **${fragmentId || 'random'}** to ${user.username}`, false)
+        .build();
+    embed.setColor(0x2ECC71);
+    return embed;
 }
 
 async function unlockLoreEmbed(user, category) {
-    return new EmbedBuilder()
-        .setTitle('📖 Lore Unlocked')
-        .setDescription(`Unlocked **${category || 'all'}** lore for ${user.username}`)
-        .setColor(0x2ECC71);
+    const embed = new RitualEmbedBuilder('admin', { mood: 'normal' })
+        .setRitualTitle('📖 Lore Unlocked')
+        .setRitualDescription(`Unlocked **${category || 'all'}** lore for ${user.username}`, false)
+        .build();
+    embed.setColor(0x2ECC71);
+    return embed;
 }
 
 async function testSecretPhraseEmbed(phrase) {
@@ -864,41 +878,36 @@ async function testSecretPhraseEmbed(phrase) {
     if (/whisper|senpai/i.test(phrase)) triggers.push('Lore trigger');
     if (/sad|lonely|depressed/i.test(phrase)) triggers.push('Support trigger');
 
-    return new EmbedBuilder()
-        .setTitle('🗝️ Phrase Test')
-        .setDescription(`Testing: \`${phrase}\``)
-        .addFields({ name: 'Triggers Detected', value: triggers.length ? triggers.join('\n') : 'No triggers' })
-        .setColor(0x3498DB);
+    const embed = new RitualEmbedBuilder('admin', { mood: 'normal' })
+        .setRitualTitle('🗝️ Phrase Test')
+        .setRitualDescription(`Testing: \`${phrase}\``, false)
+        .addRitualField('Triggers Detected', triggers.length ? triggers.join('\n') : 'No triggers')
+        .build();
+    embed.setColor(0x3498DB);
+    return embed;
 }
 
 function buildAllSecretsEmbed() {
-    return new EmbedBuilder()
-        .setTitle('🔐 All Secrets Reference')
-        .setDescription('Complete list of discoverable secrets')
-        .addFields(
-            { name: 'Support Triggers', value: '"i\'m tired", "i\'m lonely", "i\'m sad"...', inline: false },
-            { name: 'Lore Triggers', value: '"what happened to you", "the 47", "senpai"...', inline: false },
-            { name: 'Romantic Triggers', value: '"i love you", "marry me", "you\'re mine"...', inline: false },
-            { name: 'Meta Triggers', value: '"are you real", "are you an ai"...', inline: false }
-        )
-        .setColor(0x9B59B6);
+    return new RitualEmbedBuilder('admin', { mood: 'normal' })
+        .setRitualTitle('🔐 All Secrets Reference')
+        .setRitualDescription('Complete list of discoverable secrets', false)
+        .addRitualField('Support Triggers', '"i\'m tired", "i\'m lonely", "i\'m sad"...')
+        .addRitualField('Lore Triggers', '"what happened to you", "the 47", "senpai"...')
+        .addRitualField('Romantic Triggers', '"i love you", "marry me", "you\'re mine"...')
+        .addRitualField('Meta Triggers', '"are you real", "are you an ai"...')
+        .build();
 }
 
 async function showConfirmation(interaction, preset, targetUser) {
-    const embed = new EmbedBuilder()
-        .setTitle('⚠️ Confirmation Required')
-        .setDescription(`Are you sure you want to execute **${formatPreset(preset)}** on ${targetUser.username}?\n\nThis action may modify user data.`)
-        .setColor(0xE74C3C);
+    const embed = new RitualEmbedBuilder('failure', { mood: 'normal' })
+        .setRitualTitle('⚠️ Confirmation Required')
+        .setRitualDescription(`Are you sure you want to execute **${formatPreset(preset)}** on ${targetUser.username}?\n\nThis action may modify user data.`, false)
+        .build();
+    embed.setColor(0xE74C3C);
 
-    const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-            .setCustomId(`admin_confirm_${preset}_${targetUser.id}`)
-            .setLabel('Confirm')
-            .setStyle(ButtonStyle.Danger),
-        new ButtonBuilder()
-            .setCustomId('admin_cancel')
-            .setLabel('Cancel')
-            .setStyle(ButtonStyle.Secondary)
+    const row = createConfirmCancelRow(
+        `admin_confirm_${preset}_${targetUser.id}`,
+        'admin_cancel'
     );
 
     await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
@@ -914,20 +923,22 @@ async function showResetConfirmation(interaction, scope, targetUser) {
         full: '⚠️ **DANGER**: This will completely reset ALL user data!',
     };
 
-    const embed = new EmbedBuilder()
-        .setTitle('⚠️ Reset Confirmation')
-        .setDescription(`**Target:** ${targetUser.username}\n**Scope:** ${scope}\n\n${warnings[scope]}`)
-        .setColor(scope === 'full' ? 0xE74C3C : 0xF39C12);
+    const embed = new RitualEmbedBuilder('failure', { mood: 'normal' })
+        .setRitualTitle('⚠️ Reset Confirmation')
+        .setRitualDescription(`**Target:** ${targetUser.username}\n**Scope:** ${scope}\n\n${warnings[scope]}`, false)
+        .build();
+    embed.setColor(scope === 'full' ? 0xE74C3C : 0xF39C12);
 
     const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
+        new RitualButtonBuilder()
             .setCustomId(`admin_reset_${scope}_${targetUser.id}`)
             .setLabel('Confirm Reset')
-            .setStyle(ButtonStyle.Danger),
-        new ButtonBuilder()
+            .setStyle(ButtonStyle.Danger)
+            .build(),
+        new RitualButtonBuilder()
+            .fromPreset('cancel')
             .setCustomId('admin_cancel')
-            .setLabel('Cancel')
-            .setStyle(ButtonStyle.Secondary)
+            .build()
     );
 
     await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
@@ -1018,12 +1029,13 @@ async function handleSelectMenu(interaction) {
 
     logAdminAction(interaction.user.id, `trigger_${category}`, { target: userId, trigger: selected });
 
-    const embed = new EmbedBuilder()
-        .setTitle(`✅ Triggered: ${selected}`)
-        .setDescription(result)
-        .setColor(0x2ECC71)
-        .setFooter({ text: `Triggered by ${interaction.user.username}` })
-        .setTimestamp();
+    const embed = new RitualEmbedBuilder('admin', { mood: 'normal' })
+        .setRitualTitle(`✅ Triggered: ${selected}`)
+        .setRitualDescription(result, false)
+        .setRitualFooter(`Triggered by ${interaction.user.username}`)
+        .addTimestamp()
+        .build();
+    embed.setColor(0x2ECC71);
 
     await interaction.update({ embeds: [embed], components: [] });
 }
@@ -1041,10 +1053,11 @@ async function handleButton(interaction) {
         const user = await interaction.client.users.fetch(userId);
         const result = await executeQuickPreset(preset, user, interaction.client);
 
-        const embed = new EmbedBuilder()
-            .setTitle(`✅ Executed: ${formatPreset(preset)}`)
-            .setDescription(result)
-            .setColor(0x2ECC71);
+        const embed = new RitualEmbedBuilder('admin', { mood: 'normal' })
+            .setRitualTitle(`✅ Executed: ${formatPreset(preset)}`)
+            .setRitualDescription(result, false)
+            .build();
+        embed.setColor(0x2ECC71);
 
         return interaction.update({ embeds: [embed], components: [] });
     }
@@ -1054,10 +1067,11 @@ async function handleButton(interaction) {
         const userId = parts[3];
         const result = await executeReset(scope, userId);
 
-        const embed = new EmbedBuilder()
-            .setTitle(`🔄 Reset Complete`)
-            .setDescription(result)
-            .setColor(0x2ECC71);
+        const embed = new RitualEmbedBuilder('admin', { mood: 'normal' })
+            .setRitualTitle('🔄 Reset Complete')
+            .setRitualDescription(result, false)
+            .build();
+        embed.setColor(0x2ECC71);
 
         return interaction.update({ embeds: [embed], components: [] });
     }
