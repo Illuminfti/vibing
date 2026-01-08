@@ -123,7 +123,68 @@ db.exec(`
 
         -- Sentiment
         last_mood_with_them TEXT,
-        notable_moments TEXT DEFAULT '[]'
+        notable_moments TEXT DEFAULT '[]',
+
+        -- NEW: Viral optimization fields
+        intimacy_stage INTEGER DEFAULT 1,
+        first_interaction_at DATETIME,
+        jealousy_mentions INTEGER DEFAULT 0,
+        roast_count INTEGER DEFAULT 0,
+        protection_moments INTEGER DEFAULT 0,
+        growth_milestones_hit TEXT DEFAULT '[]'
+    );
+
+    -- Lore fragment tracking
+    CREATE TABLE IF NOT EXISTS lore_discoveries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT,
+        category TEXT,
+        fragment_index INTEGER,
+        discovered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, category, fragment_index)
+    );
+
+    -- Secret phrase tracking
+    CREATE TABLE IF NOT EXISTS secret_discoveries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT,
+        trigger_phrase TEXT,
+        discovered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, trigger_phrase)
+    );
+
+    -- Rare event log
+    CREATE TABLE IF NOT EXISTS rare_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT,
+        event_type TEXT,
+        message_content TEXT,
+        triggered_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Time secret tracking
+    CREATE TABLE IF NOT EXISTS time_secrets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT,
+        secret_type TEXT,
+        triggered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, secret_type)
+    );
+
+    -- Daily ritual participation
+    CREATE TABLE IF NOT EXISTS ritual_participation (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT,
+        ritual_type TEXT,
+        participated_at DATE,
+        UNIQUE(user_id, ritual_type, participated_at)
+    );
+
+    -- Ritual log (when rituals were triggered)
+    CREATE TABLE IF NOT EXISTS ritual_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ritual_name TEXT,
+        triggered_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     -- All of Ika's messages (for context/learning)
@@ -656,6 +717,264 @@ const ikaStateOps = {
     },
 };
 
+// Lore discovery operations
+const loreOps = {
+    // Log a lore fragment discovery
+    discover(userId, category, fragmentIndex) {
+        try {
+            db.prepare(`
+                INSERT INTO lore_discoveries (user_id, category, fragment_index)
+                VALUES (?, ?, ?)
+            `).run(userId, category, fragmentIndex);
+            return true;
+        } catch {
+            return false; // Already discovered
+        }
+    },
+
+    // Get discovered fragments for user
+    getDiscovered(userId, category = null) {
+        if (category) {
+            return db.prepare(`
+                SELECT * FROM lore_discoveries
+                WHERE user_id = ? AND category = ?
+                ORDER BY discovered_at
+            `).all(userId, category);
+        }
+        return db.prepare(`
+            SELECT * FROM lore_discoveries
+            WHERE user_id = ?
+            ORDER BY discovered_at
+        `).all(userId);
+    },
+
+    // Check if fragment discovered
+    isDiscovered(userId, category, fragmentIndex) {
+        const row = db.prepare(`
+            SELECT * FROM lore_discoveries
+            WHERE user_id = ? AND category = ? AND fragment_index = ?
+        `).get(userId, category, fragmentIndex);
+        return !!row;
+    },
+
+    // Get discovery count by category for user
+    getStatus(userId) {
+        return db.prepare(`
+            SELECT category, COUNT(*) as count
+            FROM lore_discoveries
+            WHERE user_id = ?
+            GROUP BY category
+        `).all(userId);
+    },
+};
+
+// Secret phrase discovery operations
+const secretOps = {
+    // Log a secret discovery
+    discover(userId, triggerPhrase) {
+        try {
+            db.prepare(`
+                INSERT INTO secret_discoveries (user_id, trigger_phrase)
+                VALUES (?, ?)
+            `).run(userId, triggerPhrase);
+            return true;
+        } catch {
+            return false; // Already discovered
+        }
+    },
+
+    // Check if secret discovered
+    isDiscovered(userId, triggerPhrase) {
+        const row = db.prepare(`
+            SELECT * FROM secret_discoveries
+            WHERE user_id = ? AND trigger_phrase = ?
+        `).get(userId, triggerPhrase);
+        return !!row;
+    },
+
+    // Get all discovered secrets for user
+    getDiscovered(userId) {
+        return db.prepare(`
+            SELECT * FROM secret_discoveries
+            WHERE user_id = ?
+            ORDER BY discovered_at
+        `).all(userId);
+    },
+};
+
+// Rare event operations
+const rareEventOps = {
+    // Log a rare event
+    log(userId, eventType, messageContent) {
+        db.prepare(`
+            INSERT INTO rare_events (user_id, event_type, message_content)
+            VALUES (?, ?, ?)
+        `).run(userId, eventType, messageContent);
+    },
+
+    // Get last time event triggered for user
+    getLastTrigger(userId, eventType) {
+        const row = db.prepare(`
+            SELECT triggered_at FROM rare_events
+            WHERE user_id = ? AND event_type = ?
+            ORDER BY triggered_at DESC
+            LIMIT 1
+        `).get(userId, eventType);
+        return row ? new Date(row.triggered_at).getTime() : 0;
+    },
+
+    // Get all rare events for user
+    getForUser(userId) {
+        return db.prepare(`
+            SELECT * FROM rare_events
+            WHERE user_id = ?
+            ORDER BY triggered_at DESC
+        `).all(userId);
+    },
+};
+
+// Time secret operations
+const timeSecretOps = {
+    // Log a time secret trigger
+    log(userId, secretType) {
+        try {
+            db.prepare(`
+                INSERT INTO time_secrets (user_id, secret_type)
+                VALUES (?, ?)
+            `).run(userId, secretType);
+            return true;
+        } catch {
+            return false; // One-time secret already triggered
+        }
+    },
+
+    // Check if time secret triggered (for one-time secrets)
+    hasTriggered(userId, secretType) {
+        const row = db.prepare(`
+            SELECT * FROM time_secrets
+            WHERE user_id = ? AND secret_type = ?
+        `).get(userId, secretType);
+        return !!row;
+    },
+
+    // Get last trigger time (for cooldown-based secrets)
+    getLastTrigger(userId, secretType) {
+        const row = db.prepare(`
+            SELECT triggered_at FROM time_secrets
+            WHERE user_id = ? AND secret_type = ?
+            ORDER BY triggered_at DESC
+            LIMIT 1
+        `).get(userId, secretType);
+        return row ? new Date(row.triggered_at).getTime() : 0;
+    },
+};
+
+// Ritual operations
+const ritualOps = {
+    // Log ritual participation
+    participate(userId, ritualType) {
+        const today = new Date().toISOString().split('T')[0];
+        try {
+            db.prepare(`
+                INSERT INTO ritual_participation (user_id, ritual_type, participated_at)
+                VALUES (?, ?, ?)
+            `).run(userId, ritualType, today);
+            return true;
+        } catch {
+            return false; // Already participated today
+        }
+    },
+
+    // Check if user participated today
+    hasParticipatedToday(userId, ritualType) {
+        const today = new Date().toISOString().split('T')[0];
+        const row = db.prepare(`
+            SELECT * FROM ritual_participation
+            WHERE user_id = ? AND ritual_type = ? AND participated_at = ?
+        `).get(userId, ritualType, today);
+        return !!row;
+    },
+
+    // Log when a ritual was triggered (global)
+    logRitual(ritualName) {
+        db.prepare(`
+            INSERT INTO ritual_log (ritual_name)
+            VALUES (?)
+        `).run(ritualName);
+    },
+
+    // Get last time a ritual was triggered
+    getLastRitual(ritualName) {
+        const row = db.prepare(`
+            SELECT triggered_at FROM ritual_log
+            WHERE ritual_name = ?
+            ORDER BY triggered_at DESC
+            LIMIT 1
+        `).get(ritualName);
+        return row ? new Date(row.triggered_at).getTime() : 0;
+    },
+};
+
+// Extended ika memory operations for viral features
+const ikaMemoryExtOps = {
+    // Update intimacy stage
+    setIntimacyStage(userId, stage) {
+        db.prepare('UPDATE ika_memory SET intimacy_stage = ? WHERE user_id = ?').run(stage, userId);
+    },
+
+    // Set first interaction timestamp
+    setFirstInteraction(userId) {
+        const existing = db.prepare('SELECT first_interaction_at FROM ika_memory WHERE user_id = ?').get(userId);
+        if (!existing?.first_interaction_at) {
+            db.prepare('UPDATE ika_memory SET first_interaction_at = CURRENT_TIMESTAMP WHERE user_id = ?').run(userId);
+        }
+    },
+
+    // Increment jealousy mentions
+    incrementJealousy(userId) {
+        db.prepare('UPDATE ika_memory SET jealousy_mentions = jealousy_mentions + 1 WHERE user_id = ?').run(userId);
+    },
+
+    // Increment roast count
+    incrementRoasts(userId) {
+        db.prepare('UPDATE ika_memory SET roast_count = roast_count + 1 WHERE user_id = ?').run(userId);
+    },
+
+    // Increment protection moments
+    incrementProtection(userId) {
+        db.prepare('UPDATE ika_memory SET protection_moments = protection_moments + 1 WHERE user_id = ?').run(userId);
+    },
+
+    // Get and update growth milestones
+    getGrowthMilestones(userId) {
+        const row = db.prepare('SELECT growth_milestones_hit FROM ika_memory WHERE user_id = ?').get(userId);
+        return row ? JSON.parse(row.growth_milestones_hit || '[]') : [];
+    },
+
+    addGrowthMilestone(userId, milestone) {
+        const milestones = this.getGrowthMilestones(userId);
+        if (!milestones.includes(milestone)) {
+            milestones.push(milestone);
+            db.prepare('UPDATE ika_memory SET growth_milestones_hit = ? WHERE user_id = ?')
+                .run(JSON.stringify(milestones), userId);
+            return true;
+        }
+        return false;
+    },
+
+    // Get most active users this week
+    getMostActiveThisWeek(limit = 10) {
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        return db.prepare(`
+            SELECT user_id, username, interaction_count
+            FROM ika_memory
+            WHERE last_interaction >= ?
+            ORDER BY interaction_count DESC
+            LIMIT ?
+        `).all(weekAgo, limit);
+    },
+};
+
 module.exports = {
     db,
     userOps,
@@ -667,4 +986,10 @@ module.exports = {
     ikaMessageOps,
     ikaMomentOps,
     ikaStateOps,
+    loreOps,
+    secretOps,
+    rareEventOps,
+    timeSecretOps,
+    ritualOps,
+    ikaMemoryExtOps,
 };

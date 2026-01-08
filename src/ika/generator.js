@@ -2,14 +2,26 @@
  * Ika's Response Generator
  *
  * Integrates with Claude API to generate Ika's responses.
+ * Enhanced with viral optimization systems for richer interactions.
  */
 
 const Anthropic = require('@anthropic-ai/sdk');
 const config = require('../config');
-const { buildSystemPrompt, checkCannedTrigger, getRandomCanned } = require('./personality');
+const { buildSystemPrompt, checkCannedTrigger, getRandomCanned, getMoodInstructions } = require('./personality');
 const { getCurrentMood } = require('./moods');
 const { getMemoryContext, recordInteraction, shouldReferenceJourney, getJourneyReference } = require('./memory');
-const { ikaMemoryOps, ikaMessageOps, ikaStateOps } = require('../database');
+const { ikaMemoryOps, ikaMessageOps, ikaStateOps, ikaMemoryExtOps } = require('../database');
+
+// Import viral optimization systems
+const { checkSecretTriggers } = require('./secrets');
+const { checkRareEvents } = require('./rareEvents');
+const { checkTimeSecrets, checkFirstOfDay, checkAnniversary } = require('./timeSecrets');
+const { getLoreFragment, getLoreStatus } = require('./lore');
+const { checkJealousy } = require('./jealousy');
+const { checkProtectionTrigger, checkSeriousConcern } = require('./protection');
+const { checkRoastTrigger } = require('./roasts');
+const { checkGrowthMilestone } = require('./growth');
+const { calculateIntimacyStage, getIntimacyInstructions, checkStageIncrease, getStageAnnouncement } = require('./intimacy');
 
 // Initialize Anthropic client
 let anthropic = null;
@@ -19,6 +31,7 @@ if (config.anthropicApiKey && config.ika.enabled) {
 
 /**
  * Generate a response from Ika
+ * Enhanced with viral optimization priority system
  */
 async function generateResponse(options) {
     const {
@@ -29,18 +42,134 @@ async function generateResponse(options) {
         forceGenerate,     // Skip canned response check
     } = options;
 
-    // Check if AI is enabled
-    if (!config.ika.enabled || !anthropic) {
-        console.log('✧ Ika AI disabled, using fallback');
-        return getFallbackResponse(type);
+    const userId = trigger?.author?.id;
+    const content = trigger?.content || '';
+
+    // Set first interaction timestamp if not set
+    if (userId) {
+        ikaMemoryExtOps.setFirstInteraction(userId);
     }
 
-    // Check for canned responses first (unless forced)
+    // === PRIORITY 1: Serious mental health concerns ===
+    if (content) {
+        const serious = checkSeriousConcern(content);
+        if (serious.serious) {
+            return {
+                content: serious.response,
+                type: 'protection',
+                generated: false,
+                priority: 'serious',
+            };
+        }
+    }
+
+    // === PRIORITY 2: Protection triggers ===
+    if (content) {
+        const protection = checkProtectionTrigger(content);
+        if (protection.shouldProtect) {
+            if (userId) {
+                ikaMemoryExtOps.incrementProtection(userId);
+            }
+            return {
+                content: protection.response,
+                type: 'protection',
+                generated: false,
+                priority: 'protection',
+            };
+        }
+    }
+
+    // === PRIORITY 3: Secret phrase triggers ===
+    if (userId && content) {
+        const secret = await checkSecretTriggers(
+            trigger,
+            userId,
+            (uid, cat) => getLoreFragment(uid, cat)
+        );
+        if (secret.triggered) {
+            // Log interaction
+            if (userId) recordInteraction(userId);
+            return {
+                content: secret.response,
+                type: 'secret',
+                category: secret.category,
+                generated: false,
+                priority: 'secret',
+            };
+        }
+    }
+
+    // === PRIORITY 4: Time-based secrets ===
+    if (userId) {
+        const timeSecret = await checkTimeSecrets(userId);
+        if (timeSecret.triggered) {
+            return {
+                content: timeSecret.message,
+                type: 'timeSecret',
+                secret: timeSecret.secret,
+                generated: false,
+                priority: 'timeSecret',
+            };
+        }
+    }
+
+    // === PRIORITY 5: Rare events ===
+    if (userId && context) {
+        const rareEvent = await checkRareEvents(trigger, userId, context);
+        if (rareEvent.triggered) {
+            return {
+                content: rareEvent.response,
+                type: 'rareEvent',
+                event: rareEvent.event,
+                generated: false,
+                priority: 'rareEvent',
+            };
+        }
+    }
+
+    // === PRIORITY 6: Roast opportunities (lower chance) ===
+    if (content) {
+        const roast = checkRoastTrigger(content);
+        if (roast.shouldRoast) {
+            if (userId) {
+                ikaMemoryExtOps.incrementRoasts(userId);
+            }
+            return {
+                content: roast.response,
+                type: 'roast',
+                roastType: roast.type,
+                generated: false,
+                priority: 'roast',
+            };
+        }
+    }
+
+    // === PRIORITY 7: Jealousy check ===
+    if (userId && context && context.length > 10) {
+        const botId = trigger?.client?.user?.id;
+        if (botId) {
+            const jealousy = await checkJealousy(trigger, context, userId, botId);
+            if (jealousy.triggered) {
+                if (userId) {
+                    ikaMemoryExtOps.incrementJealousy(userId);
+                }
+                return {
+                    content: jealousy.response,
+                    type: 'jealousy',
+                    generated: false,
+                    priority: 'jealousy',
+                };
+            }
+        }
+    }
+
+    // === Check for canned responses (unless forced) ===
     if (!forceGenerate && trigger) {
         const cannedCheck = checkCannedTrigger(trigger.content);
         if (cannedCheck) {
             const response = getRandomCanned(cannedCheck.type);
             if (response) {
+                if (userId) recordInteraction(userId);
                 return {
                     content: response,
                     type: cannedCheck.type,
@@ -50,32 +179,56 @@ async function generateResponse(options) {
         }
     }
 
+    // Check if AI is enabled
+    if (!config.ika.enabled || !anthropic) {
+        console.log('✧ Ika AI disabled, using fallback');
+        return getFallbackResponse(type);
+    }
+
+    // === GENERATE AI RESPONSE WITH FULL CONTEXT ===
+
     // Get current mood
     const currentMood = mood || getCurrentMood(context);
 
+    // Calculate intimacy stage
+    const intimacyStage = userId ? await calculateIntimacyStage(userId) : 1;
+    const intimacyInstructions = getIntimacyInstructions(intimacyStage);
+
     // Get memory context for the trigger user
     let memoryContext = '';
-    if (trigger?.author?.id) {
-        memoryContext = getMemoryContext(trigger.author.id) || '';
+    if (userId) {
+        memoryContext = getMemoryContext(userId) || '';
+
+        // Add lore status if they have discoveries
+        const loreStatus = getLoreStatus(userId);
+        const loreProgress = Object.entries(loreStatus)
+            .filter(([, v]) => v.discovered > 0)
+            .map(([k, v]) => `${k}: ${v.discovered}/${v.total}`)
+            .join(', ');
+
+        if (loreProgress) {
+            memoryContext += `\nLore discovered: ${loreProgress}`;
+        }
     }
 
-    // Build system prompt
-    const systemPrompt = buildSystemPrompt(currentMood, memoryContext);
+    // Build system prompt with all context
+    const systemPrompt = buildSystemPrompt(currentMood, memoryContext, intimacyInstructions);
 
-    // Build context string
-    const contextText = context && context.length > 0
-        ? context.map(m => `${m.author?.username || 'unknown'}: ${m.content}`).join('\n')
+    // Build context string (last 30 messages)
+    const contextMessages = context?.slice(-30) || [];
+    const contextText = contextMessages.length > 0
+        ? contextMessages.map(m => `${m.author?.username || 'unknown'}: ${m.content}`).join('\n')
         : '';
 
     // Build user prompt based on type
     let userPrompt;
     switch (type) {
         case 'mentioned':
-            userPrompt = `Recent chat:\n${contextText}\n\nResponding to ${trigger.author.username}: "${trigger.content}"\n\nReply naturally as Ika. One message, keep it concise.`;
+            userPrompt = `Recent chat:\n${contextText}\n\nResponding to ${trigger.author.username}: "${trigger.content}"\n\nReply naturally as Ika. Be yourself - confident, maybe teasing, maybe soft, depending on the moment. One message.`;
             break;
 
         case 'passive':
-            userPrompt = `Recent chat:\n${contextText}\n\nSomething in this conversation caught your interest. Chime in naturally as Ika. One message.`;
+            userPrompt = `Recent chat:\n${contextText}\n\nSomething caught your interest. Chime in naturally as Ika. One message.`;
             break;
 
         case 'moment':
@@ -93,35 +246,77 @@ async function generateResponse(options) {
     try {
         const response = await anthropic.messages.create({
             model: 'claude-sonnet-4-20250514',
-            max_tokens: 300,
+            max_tokens: 350,
             system: systemPrompt,
             messages: [{ role: 'user', content: userPrompt }],
         });
 
-        let content = response.content[0].text;
+        let responseContent = response.content[0].text;
+
+        // === POST-GENERATION ADDITIONS ===
+
+        // Check for growth milestone
+        if (userId) {
+            const growth = await checkGrowthMilestone(userId);
+            if (growth) {
+                responseContent += `\n\n...${growth.response}`;
+            }
+        }
+
+        // Check for intimacy stage increase
+        if (userId) {
+            const stageChange = checkStageIncrease(userId, intimacyStage);
+            if (stageChange.increased) {
+                const announcement = getStageAnnouncement(stageChange.newStage);
+                if (announcement) {
+                    // This could be sent as a follow-up or incorporated
+                    // For now, log it
+                    console.log(`✧ ${trigger.author.username} reached intimacy stage ${stageChange.newStage}`);
+                }
+            }
+        }
 
         // Maybe add journey reference for devoted users
-        if (trigger?.author?.id && shouldReferenceJourney()) {
-            const memory = ikaMemoryOps.get(trigger.author.id);
+        if (userId && shouldReferenceJourney()) {
+            const memory = ikaMemoryOps.get(userId);
             if (memory && memory.relationship_level === 'devoted') {
                 const reference = getJourneyReference(memory);
                 if (reference) {
-                    content += reference;
+                    responseContent += reference;
+                }
+            }
+        }
+
+        // Check for first message of day
+        if (userId) {
+            const firstOfDay = checkFirstOfDay(userId);
+            if (firstOfDay.isFirst && firstOfDay.message && Math.random() < 0.3) {
+                responseContent = firstOfDay.message + '\n\n' + responseContent;
+            }
+        }
+
+        // Check for anniversary
+        if (userId) {
+            const memory = ikaMemoryOps.get(userId);
+            if (memory?.first_interaction_at) {
+                const anniversary = checkAnniversary(userId, memory.first_interaction_at);
+                if (anniversary.isAnniversary && anniversary.message) {
+                    responseContent += `\n\n...${anniversary.message}`;
                 }
             }
         }
 
         // Record interaction
-        if (trigger?.author?.id) {
-            recordInteraction(trigger.author.id);
+        if (userId) {
+            recordInteraction(userId);
         }
 
         // Log the message
         ikaMessageOps.log(
             trigger?.channel?.id,
-            trigger?.author?.id,
+            userId,
             trigger?.content,
-            content,
+            responseContent,
             type,
             currentMood
         );
@@ -130,10 +325,11 @@ async function generateResponse(options) {
         ikaStateOps.setLastSpoke();
 
         return {
-            content,
+            content: responseContent,
             mood: currentMood,
             type,
             generated: true,
+            intimacyStage,
         };
 
     } catch (error) {
@@ -190,7 +386,7 @@ async function generateWelcomeMessage(member, journey) {
         return getRandomWelcome(member.username, journey);
     }
 
-    const systemPrompt = buildSystemPrompt('energetic', '');
+    const systemPrompt = buildSystemPrompt('energetic', '', '');
 
     const userPrompt = `A new person just completed all seven gates and entered the Inner Sanctum! Their name is ${member.username}.
 
@@ -200,12 +396,12 @@ Their journey:
 - They came because: "${journey.whyTheyCame || 'unknown reason'}"
 - They vowed: "${journey.theirVow || 'something'}"
 
-Welcome them personally as Ika. Reference their journey. One message, be excited but genuine.`;
+Welcome them personally as Ika. Reference their journey. One message, be excited but genuine. Make them feel like they belong now.`;
 
     try {
         const response = await anthropic.messages.create({
             model: 'claude-sonnet-4-20250514',
-            max_tokens: 300,
+            max_tokens: 350,
             system: systemPrompt,
             messages: [{ role: 'user', content: userPrompt }],
         });
@@ -248,9 +444,25 @@ function canRespond() {
     return Date.now() - lastSpoke >= config.ika.cooldownMs;
 }
 
+/**
+ * Update protection count for user
+ */
+async function updateProtectionCount(userId) {
+    ikaMemoryExtOps.incrementProtection(userId);
+}
+
+/**
+ * Update roast count for user
+ */
+async function updateRoastCount(userId) {
+    ikaMemoryExtOps.incrementRoasts(userId);
+}
+
 module.exports = {
     generateResponse,
     generateWelcomeMessage,
     canRespond,
     getFallbackResponse,
+    updateProtectionCount,
+    updateRoastCount,
 };
