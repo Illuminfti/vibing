@@ -825,17 +825,19 @@ async function buildInspectEmbed(user, section) {
 }
 
 function buildInspectButtons(userId, currentSection) {
-    const sections = ['overview', 'gates', 'intimacy', 'memory', 'fading', 'trials', 'shrine', 'events'];
+    const sections = ['overview', 'gates', 'intimacy', 'memory', 'fading'];
 
-    const buttons = sections.slice(0, 5).map(section =>
-        new RitualButtonBuilder()
-            .setCustomId(`admin_inspect_${userId}_${section}`)
-            .setLabel(section.charAt(0).toUpperCase() + section.slice(1))
-            .setStyle(section === currentSection ? ButtonStyle.Primary : ButtonStyle.Secondary)
-            .build()
-    );
+    const builder = new RitualButtonBuilder();
 
-    return [new ActionRowBuilder().addComponents(buttons)];
+    for (const section of sections) {
+        builder.addButton({
+            customId: `admin_inspect_${userId}_${section}`,
+            label: section.charAt(0).toUpperCase() + section.slice(1),
+            style: section === currentSection ? ButtonStyle.Primary : ButtonStyle.Secondary,
+        });
+    }
+
+    return [builder.buildRow()];
 }
 
 async function buildSecretsProgressEmbed(user) {
