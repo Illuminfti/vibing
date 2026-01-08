@@ -395,6 +395,44 @@ db.exec(`
     CREATE INDEX IF NOT EXISTS idx_fading_active ON fading_state(last_interaction);
 `);
 
+// ═══════════════════════════════════════════════════════════════
+// SECURITY: Column allowlists to prevent SQL injection
+// ═══════════════════════════════════════════════════════════════
+
+const ALLOWED_USER_COLUMNS = new Set([
+    'username', 'joined_at', 'gate_1_at', 'gate_2_at', 'gate_2_answer',
+    'gate_3_at', 'gate_3_url', 'gate_4_at', 'gate_5_started_at',
+    'gate_5_messages_sent', 'gate_5_at', 'gate_5_reason', 'gate_6_at',
+    'gate_6_type', 'gate_6_content', 'gate_6_approved_by', 'gate_7_at',
+    'gate_7_vow', 'gate_7_approved_by', 'ascended_at', 'total_time_seconds',
+    'last_activity_at', 'idle_warning_sent', 'dms_work', 'gate_dm_failures',
+]);
+
+const ALLOWED_MEMORY_COLUMNS = new Set([
+    'username', 'why_they_came', 'their_vow', 'their_memory_answer',
+    'interaction_count', 'last_interaction', 'relationship_level',
+    'remembered_facts', 'inside_jokes', 'nickname', 'last_mood_with_them',
+    'notable_moments', 'intimacy_stage', 'first_interaction_at',
+    'jealousy_mentions', 'roast_count', 'protection_moments',
+    'growth_milestones_hit', 'real_name', 'real_name_learned_at',
+    'handwritten_notes_sent', 'last_presence_notice', 'whisper_fragments_found',
+    'dms_enabled', 'dm_failures', 'last_dm_attempt', 'unprompted_opt_in',
+    'shrine', 'yandere_stage', 'betrayal_count', 'betrayal_type',
+    'redemption_stage', 'last_kabedon', 'romance_heat', 'forbidden_tier',
+    'ritual_tokens',
+]);
+
+/**
+ * Validate column name against allowlist (SQL injection prevention)
+ * @param {string} column - Column name to validate
+ * @param {Set} allowlist - Set of allowed column names
+ * @returns {boolean}
+ */
+function isValidColumn(column, allowlist) {
+    if (typeof column !== 'string') return false;
+    return allowlist.has(column);
+}
+
 // User operations
 const userOps = {
     // Get or create user
@@ -411,18 +449,35 @@ const userOps = {
         return db.prepare('SELECT * FROM users WHERE discord_id = ?').get(discordId);
     },
 
-    // Update user field
+    // Update user field (with SQL injection protection)
     update(discordId, field, value) {
+        // SECURITY: Validate field name against allowlist
+        if (!isValidColumn(field, ALLOWED_USER_COLUMNS)) {
+            console.error(`Security: Rejected invalid column name in userOps.update: ${field}`);
+            return false;
+        }
         db.prepare(`UPDATE users SET ${field} = ? WHERE discord_id = ?`).run(value, discordId);
+        return true;
     },
 
-    // Complete a gate
+    // Complete a gate (with SQL injection protection)
     completeGate(discordId, gateNumber, extraData = {}) {
+        // SECURITY: Validate gate number
+        if (typeof gateNumber !== 'number' || gateNumber < 1 || gateNumber > 7) {
+            console.error(`Security: Rejected invalid gate number: ${gateNumber}`);
+            return { isFirst: false, error: 'invalid_gate' };
+        }
+
         const timestamp = new Date().toISOString();
         const updates = [`gate_${gateNumber}_at = ?`];
         const values = [timestamp];
 
+        // SECURITY: Validate all extraData keys against allowlist
         for (const [key, value] of Object.entries(extraData)) {
+            if (!isValidColumn(key, ALLOWED_USER_COLUMNS)) {
+                console.error(`Security: Rejected invalid column in completeGate: ${key}`);
+                continue; // Skip invalid columns
+            }
             updates.push(`${key} = ?`);
             values.push(value);
         }
@@ -711,16 +766,27 @@ const ikaMemoryOps = {
         return memory;
     },
 
-    // Update memory fields dynamically
+    // Update memory fields dynamically (with SQL injection protection)
     update(userId, fields) {
-        if (!fields || Object.keys(fields).length === 0) return;
+        if (!fields || Object.keys(fields).length === 0) return false;
 
         const setClauses = [];
         const values = [];
 
+        // SECURITY: Validate all field keys against allowlist
         for (const [key, value] of Object.entries(fields)) {
+            if (!isValidColumn(key, ALLOWED_MEMORY_COLUMNS)) {
+                console.error(`Security: Rejected invalid column in ikaMemoryOps.update: ${key}`);
+                continue; // Skip invalid columns
+            }
             setClauses.push(`${key} = ?`);
             values.push(value);
+        }
+
+        // If no valid columns, abort
+        if (setClauses.length === 0) {
+            console.error('Security: No valid columns to update in ikaMemoryOps.update');
+            return false;
         }
 
         values.push(userId);
@@ -730,6 +796,7 @@ const ikaMemoryOps = {
             SET ${setClauses.join(', ')}
             WHERE user_id = ?
         `).run(...values);
+        return true;
     },
 
     // Update from user's journey (when they ascend)

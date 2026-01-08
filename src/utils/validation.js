@@ -1,11 +1,53 @@
 const config = require('../config');
 
+// ═══════════════════════════════════════════════════════════════
+// SECURITY: URL validation with SSRF and phishing protection
+// ═══════════════════════════════════════════════════════════════
+
 /**
- * Check if string is a valid URL
+ * Blocked URL patterns for security
+ */
+const BLOCKED_URL_PATTERNS = [
+    // Internal/private IP ranges (SSRF protection)
+    /^https?:\/\/localhost/i,
+    /^https?:\/\/127\./,
+    /^https?:\/\/10\./,
+    /^https?:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\./,
+    /^https?:\/\/192\.168\./,
+    /^https?:\/\/0\./,
+    /^https?:\/\/\[::1\]/,
+    /^https?:\/\/\[fe80:/i,
+    // File and other dangerous protocols
+    /^file:/i,
+    /^javascript:/i,
+    /^data:/i,
+    /^vbscript:/i,
+    // Common internal hostnames
+    /^https?:\/\/internal\./i,
+    /^https?:\/\/intranet\./i,
+    /^https?:\/\/admin\./i,
+];
+
+/**
+ * Check if string is a valid URL (with security checks)
  */
 function isValidUrl(string) {
     try {
-        new URL(string);
+        const url = new URL(string);
+
+        // Only allow http and https protocols
+        if (!['http:', 'https:'].includes(url.protocol)) {
+            return false;
+        }
+
+        // Check against blocked patterns (SSRF protection)
+        for (const pattern of BLOCKED_URL_PATTERNS) {
+            if (pattern.test(string)) {
+                console.warn(`Security: Blocked potentially malicious URL: ${string.substring(0, 50)}...`);
+                return false;
+            }
+        }
+
         return true;
     } catch {
         return false;
