@@ -3,6 +3,8 @@
  *
  * Timed DM sequence that cannot be rushed.
  * User must wait for all 6 messages, then respond with /absence.
+ *
+ * Visual: Sparse, achingly empty, near-black void aesthetic
  */
 
 const config = require('../config');
@@ -10,11 +12,13 @@ const messages = require('../assets/messages');
 const { userOps, gate5Ops } = require('../database');
 const { assignGateRole, hasRole } = require('../utils/roles');
 const { validateGate5Reason, sanitize } = require('../utils/validation');
-const { createGateEmbed, createGateEmbedWithImage } = require('../utils/embeds');
 const { responseDelay } = require('../utils/timing');
 const { maybeGlitch } = require('../utils/zalgo');
 const path = require('path');
 const fs = require('fs');
+
+// New ritual UI system
+const { RitualEmbedBuilder, createGateErrorEmbed, createNotReadyEmbed } = require('../ui');
 
 /**
  * Process Gate 5 response
@@ -25,25 +29,33 @@ async function processGate5(interaction) {
 
     // Check if user has Gate 4 role
     if (!hasRole(member, config.roles.gate4)) {
-        const embed = createGateEmbed(null, messages.errors.notReady);
+        const embed = createNotReadyEmbed(4, 4);
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     // Check if already completed
     if (userOps.hasCompletedGate(member.id, 5)) {
-        const embed = createGateEmbed(null, messages.errors.alreadyCompleted);
+        // Gate 5 sparse "already done" message
+        const embed = new RitualEmbedBuilder(5, { mood: 'soft' })
+            .setRitualDescription('\n\n\nyou already waited.\n\n\n', false)
+            .build();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     // Check if all messages have been sent
     if (!gate5Ops.allMessagesSent(member.id)) {
-        const embed = createGateEmbed(null, messages.gate5.tooEarly);
+        const embed = new RitualEmbedBuilder(5, { mood: 'vulnerable' })
+            .setRitualDescription('\n\n\nwait.\n\n\n', false)
+            .setIkaMessage("the silence needs time...")
+            .build();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     // Validate reason length
     if (!validateGate5Reason(reason)) {
-        const embed = createGateEmbed(null, messages.gate5.tooShort);
+        const embed = createGateErrorEmbed(5, 'tooShort', {
+            ikaComment: "more words. why did you stay?",
+        });
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
@@ -56,7 +68,6 @@ async function processGate5(interaction) {
         // Sanitize and prepare reason
         const sanitizedReason = sanitize(reason);
 
-        const dmText = maybeGlitch(messages.gate5.success(sanitizedReason));
         const imagePath = path.join(__dirname, '..', '..', 'images', 'gate5_awake.png');
         const imageExists = fs.existsSync(imagePath);
 
@@ -75,18 +86,40 @@ async function processGate5(interaction) {
 
         console.log(`✧ ${member.user.tag} completed Gate 5`);
 
-        // Send success as ephemeral (only user sees it)
+        // Build sparse success embed - Gate 5 aesthetic is empty, aching
+        const successEmbed = new RitualEmbedBuilder(5, { mood: 'soft' })
+            .addVoid(2)
+            .setIkaMessage("...you stayed.")
+            .addVoid(1);
+
+        // Add their reason in the sparse style
+        successEmbed.raw.addFields({
+            name: '\u200B',
+            value: `*"${sanitizedReason.substring(0, 50)}${sanitizedReason.length > 50 ? '...' : ''}"*`,
+            inline: false,
+        });
+
+        successEmbed.addVoid(1);
+        successEmbed.addProgressVisualization(6);
+
+        // Apply sparse effect
+        successEmbed.applySparseEffect();
+
+        // Send success as ephemeral
         if (imageExists) {
-            const { embed, attachment } = createGateEmbedWithImage(null, dmText, 'gate5_awake.png');
-            await interaction.editReply({ embeds: [embed], files: [attachment] });
+            const { AttachmentBuilder } = require('discord.js');
+            const attachment = new AttachmentBuilder(imagePath, { name: 'gate5_awake.png' });
+            successEmbed.setImage('attachment://gate5_awake.png');
+            await interaction.editReply({ embeds: [successEmbed.build()], files: [attachment] });
         } else {
-            const embed = createGateEmbed(null, dmText);
-            await interaction.editReply({ embeds: [embed] });
+            await interaction.editReply({ embeds: [successEmbed.build()] });
         }
 
     } catch (error) {
         console.error('Gate 5 error:', error);
-        const errorEmbed = createGateEmbed(null, messages.errors.generic || 'something went wrong...');
+        const errorEmbed = new RitualEmbedBuilder(5, { mood: 'vulnerable' })
+            .setRitualDescription('\n\n\n...something went wrong\n\n\n', false)
+            .build();
         await interaction.editReply({ embeds: [errorEmbed] });
     }
 }

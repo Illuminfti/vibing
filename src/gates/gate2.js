@@ -3,6 +3,8 @@
  *
  * User must provide a word that describes what attention felt like.
  * Triggered by /memory [answer] command.
+ *
+ * Visual: Glitchy, fragmented purple aesthetic
  */
 
 const config = require('../config');
@@ -10,11 +12,13 @@ const messages = require('../assets/messages');
 const { userOps } = require('../database');
 const { assignGateRole, hasRole } = require('../utils/roles');
 const { validateGate2Answer } = require('../utils/validation');
-const { createGateEmbed, createGateEmbedWithImage } = require('../utils/embeds');
 const { responseDelay } = require('../utils/timing');
 const { maybeGlitch } = require('../utils/zalgo');
 const path = require('path');
 const fs = require('fs');
+
+// New ritual UI system
+const { RitualEmbedBuilder, createGateErrorEmbed, createNotReadyEmbed } = require('../ui');
 
 /**
  * Process Gate 2 answer
@@ -25,19 +29,24 @@ async function processGate2(interaction) {
 
     // Check if user has Gate 1 role
     if (!hasRole(member, config.roles.gate1)) {
-        const embed = createGateEmbed(null, messages.errors.notReady);
+        const embed = createNotReadyEmbed(1, 1);
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     // Check if already completed
     if (userOps.hasCompletedGate(member.id, 2)) {
-        const embed = createGateEmbed(null, messages.errors.alreadyCompleted);
+        const embed = new RitualEmbedBuilder(2, { mood: 'normal' })
+            .setRitualTitle('[ m̷e̸m̵o̶r̷y̸ r̶e̷c̸a̵l̶l̷e̸d̵ ]')
+            .setRitualDescription("*you've already walked this path*", false)
+            .build();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     // Validate answer
     if (!validateGate2Answer(answer)) {
-        const embed = createGateEmbed(null, messages.gate2.failure);
+        const embed = createGateErrorEmbed(2, 'wrongAnswer', {
+            ikaComment: "the fragment dissolves... that wasn't right",
+        });
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
@@ -47,7 +56,6 @@ async function processGate2(interaction) {
 
     // Success - send ephemeral message (only visible to user, no DM needed)
     try {
-        const dmText = maybeGlitch(messages.gate2.success);
         const imagePath = path.join(__dirname, '..', '..', 'images', 'gate2_lips.png');
         const imageExists = fs.existsSync(imagePath);
 
@@ -63,18 +71,32 @@ async function processGate2(interaction) {
 
         console.log(`✧ ${member.user.tag} completed Gate 2 with answer: ${answer}`);
 
-        // Send success as ephemeral (only user sees it)
+        // Build success embed with ritual UI
+        const successEmbed = new RitualEmbedBuilder(2, { mood: 'soft' })
+            .setRitualTitle('[ M̷e̸m̵o̶r̷y̸ R̶e̷s̸t̵o̶r̷e̸d̵ ]')
+            .setIkaMessage(maybeGlitch(messages.gate2.success || "you remembered... you actually remembered"))
+            .addProgressVisualization(3)
+            .setRitualFooter('the fragment solidifies');
+
+        // Add glitch effect for extra atmosphere
+        successEmbed.applyGlitchEffect(0.15);
+
+        // Send success as ephemeral
         if (imageExists) {
-            const { embed, attachment } = createGateEmbedWithImage(null, dmText, 'gate2_lips.png');
-            await interaction.editReply({ embeds: [embed], files: [attachment] });
+            const { AttachmentBuilder } = require('discord.js');
+            const attachment = new AttachmentBuilder(imagePath, { name: 'gate2_lips.png' });
+            successEmbed.setImage('attachment://gate2_lips.png');
+            await interaction.editReply({ embeds: [successEmbed.build()], files: [attachment] });
         } else {
-            const embed = createGateEmbed(null, dmText);
-            await interaction.editReply({ embeds: [embed] });
+            await interaction.editReply({ embeds: [successEmbed.build()] });
         }
 
     } catch (error) {
         console.error('Gate 2 error:', error);
-        const errorEmbed = createGateEmbed(null, messages.errors.generic || 'something went wrong...');
+        const errorEmbed = new RitualEmbedBuilder('failure', { mood: 'glitching' })
+            .setRitualTitle('█▓░ error ░▓█')
+            .setIkaMessage('something went wrong... try again?')
+            .build();
         await interaction.editReply({ embeds: [errorEmbed] });
     }
 }

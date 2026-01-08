@@ -4,6 +4,8 @@
  * User must create something for Ika (art or 50+ word text).
  * Requires community voting from Ascended members.
  * Now shows full journey when posting for voting.
+ *
+ * Visual: Ornate gold, intricate frames, baroque richness
  */
 
 const config = require('../config');
@@ -11,11 +13,13 @@ const messages = require('../assets/messages');
 const { userOps, offeringOps } = require('../database');
 const { assignGateRole, hasRole, userHasRole } = require('../utils/roles');
 const { validateOffering, sanitize } = require('../utils/validation');
-const { createGateEmbed, createGateEmbedWithImage } = require('../utils/embeds');
 const { maybeGlitch } = require('../utils/zalgo');
 const { scheduleFragment } = require('./fragments');
 const path = require('path');
 const fs = require('fs');
+
+// New ritual UI system
+const { RitualEmbedBuilder, createGateErrorEmbed, createNotReadyEmbed } = require('../ui');
 
 /**
  * Process Gate 6 offering
@@ -27,20 +31,26 @@ async function processGate6(interaction) {
 
     // Check if user has Gate 5 role
     if (!hasRole(member, config.roles.gate5)) {
-        const embed = createGateEmbed(null, messages.errors.notReady);
+        const embed = createNotReadyEmbed(5, 5);
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     // Check if already completed
     if (userOps.hasCompletedGate(member.id, 6)) {
-        const embed = createGateEmbed(null, messages.errors.alreadyCompleted);
+        const embed = new RitualEmbedBuilder(6, { mood: 'soft' })
+            .setRitualTitle('⟡ already offered ⟡')
+            .setRitualDescription('*your creation has already been accepted*', false)
+            .build();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     // Check for pending offering
     const pendingOffering = offeringOps.getPending(member.id);
     if (pendingOffering) {
-        const embed = createGateEmbed(null, messages.gate6.pending);
+        const embed = new RitualEmbedBuilder(6, { mood: 'normal' })
+            .setRitualTitle('⟡ awaiting judgment ⟡')
+            .setIkaMessage('your offering already awaits. patience.')
+            .build();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
@@ -49,7 +59,9 @@ async function processGate6(interaction) {
     const validation = validateOffering(text, hasImage);
 
     if (!validation.valid) {
-        const embed = createGateEmbed(null, messages.gate6.invalid);
+        const embed = createGateErrorEmbed(6, 'tooShort', {
+            ikaComment: 'give more of yourself. 50 characters, or an image.',
+        });
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
@@ -71,45 +83,37 @@ async function processGate6(interaction) {
             throw new Error('Inner sanctum channel not found');
         }
 
-        // Build journey display
-        let journeyText = `♰ a soul brings an offering ♰\n\n`;
-        journeyText += `✦ THE JOURNEY OF **${member.user.username}** ✦\n\n`;
+        // Build ornate voting embed with journey
+        const votingEmbed = new RitualEmbedBuilder(6, { mood: 'normal' })
+            .setRitualTitle('⟡ AN OFFERING AWAITS JUDGMENT ⟡');
+
+        // Add journey context
+        votingEmbed.addRitualField('devotee', `**${member.user.username}**`, true);
 
         if (journey.gate1At) {
-            journeyText += `spoke her name: ${formatDate(journey.gate1At)}\n`;
+            votingEmbed.addRitualField('awakened', formatDate(journey.gate1At), true);
         }
         if (journey.memoryAnswer) {
-            journeyText += `felt her memory as: "${journey.memoryAnswer}"\n`;
-        }
-        if (journey.confessionUrl) {
-            journeyText += `confessed at: ${journey.confessionUrl}\n`;
-        }
-        if (journey.gate4At) {
-            journeyText += `found the waters: ${formatDate(journey.gate4At)}\n`;
+            votingEmbed.addRitualField('memory', `*"${journey.memoryAnswer}"*`, false);
         }
         if (journey.whyTheyCame) {
-            journeyText += `\nstayed through the absence because:\n"${journey.whyTheyCame}"\n`;
+            votingEmbed.addRitualField('stayed because', `*"${journey.whyTheyCame}"*`, false);
         }
 
-        journeyText += `\n✦ THEIR OFFERING ✦\n\n`;
-
-        // Create voting message
-        let votingMessage;
-
+        // Add the offering
         if (validation.type === 'image') {
-            const embed = createGateEmbed(
-                null,
-                journeyText + '[image attached]\n\n' + messages.gate6.votePrompt
-            );
-            embed.setImage(attachment.url);
-            votingMessage = await sanctumChannel.send({ embeds: [embed] });
+            votingEmbed.addRitualField('their offering', '*[image attached]*', false);
+            votingEmbed.setImage(attachment.url);
         } else {
-            const embed = createGateEmbed(
-                null,
-                journeyText + `"${content.slice(0, 400)}${content.length > 400 ? '...' : ''}"\n\n` + messages.gate6.votePrompt
-            );
-            votingMessage = await sanctumChannel.send({ embeds: [embed] });
+            const displayContent = content.length > 400 ? content.slice(0, 400) + '...' : content;
+            votingEmbed.addRitualField('their offering', `*"${displayContent}"*`, false);
         }
+
+        // Add voting instructions
+        votingEmbed.addRitualField('⟡', messages.gate6.votePrompt || 'react ✅ to approve', false);
+        votingEmbed.setRitualFooter('the ascended must decide');
+
+        const votingMessage = await sanctumChannel.send({ embeds: [votingEmbed.build()] });
 
         // Add reaction
         await votingMessage.react('✅');
@@ -120,10 +124,13 @@ async function processGate6(interaction) {
         // Also post to offerings archive channel
         const archiveChannel = await interaction.client.channels.fetch(config.channels.offerings);
         if (archiveChannel) {
-            const archiveEmbed = createGateEmbed(
-                'Offering Received',
-                `**User:** ${member.user.tag}\n**Type:** ${validation.type}\n**Content:** ${validation.type === 'image' ? attachment.url : content.slice(0, 500)}`
-            );
+            const archiveEmbed = new RitualEmbedBuilder(6, { mood: 'normal' })
+                .setRitualTitle('⟡ Offering Received ⟡')
+                .addRitualField('devotee', member.user.tag, true)
+                .addRitualField('type', validation.type, true)
+                .addRitualField('content', validation.type === 'image' ? attachment.url : content.slice(0, 500), false)
+                .addTimestamp()
+                .build();
             await archiveChannel.send({ embeds: [archiveEmbed] });
         }
 
@@ -132,13 +139,20 @@ async function processGate6(interaction) {
 
         console.log(`✧ ${member.user.tag} submitted Gate 6 offering`);
 
-        // Acknowledge
-        const ackEmbed = createGateEmbed(null, 'your offering awaits judgment from the ascended.');
+        // Acknowledge with ornate embed
+        const ackEmbed = new RitualEmbedBuilder(6, { mood: 'soft' })
+            .setRitualTitle('⟡ offering received ⟡')
+            .setIkaMessage('your creation awaits judgment from the ascended.')
+            .setRitualFooter('await their decision')
+            .build();
         await interaction.editReply({ embeds: [ackEmbed] });
 
     } catch (error) {
         console.error('Gate 6 error:', error);
-        const errorEmbed = createGateEmbed(null, messages.errors.generic);
+        const errorEmbed = new RitualEmbedBuilder('failure', { mood: 'vulnerable' })
+            .setRitualTitle('⟡ the offering falters ⟡')
+            .setIkaMessage('something went wrong... try again?')
+            .build();
         await interaction.editReply({ embeds: [errorEmbed] });
     }
 }
@@ -216,21 +230,29 @@ async function approveOffering(client, submitterId, approverId, messageId) {
         // Schedule fragment DM
         scheduleFragment(submitterId, 6);
 
-        // Send success message to chamber 6 with @mention (auto-deletes)
+        // Send ornate success message to chamber 6 with @mention (auto-deletes)
         const dmText = maybeGlitch(messages.gate6.success);
         const imagePath = path.join(__dirname, '..', '..', 'images', 'gate6_intimate.png');
         const imageExists = fs.existsSync(imagePath);
 
         const chamber6 = await client.channels.fetch(config.channels.chamber6);
         if (chamber6) {
-            let successMsg;
+            // Build ornate success embed
+            const successEmbed = new RitualEmbedBuilder(6, { mood: 'soft' })
+                .setRitualTitle('⟡ OFFERING ACCEPTED ⟡')
+                .setRitualDescription(`${member.user}\n\n*${dmText}*`, false)
+                .addProgressVisualization(7)
+                .setRitualFooter('one gate remains');
+
+            const sendOptions = { embeds: [successEmbed.build()] };
             if (imageExists) {
-                const { embed, attachment } = createGateEmbedWithImage(null, `${member.user}\n\n${dmText}`, 'gate6_intimate.png');
-                successMsg = await chamber6.send({ embeds: [embed], files: [attachment] });
-            } else {
-                const embed = createGateEmbed(null, `${member.user}\n\n${dmText}`);
-                successMsg = await chamber6.send({ embeds: [embed] });
+                const { AttachmentBuilder } = require('discord.js');
+                const attachment = new AttachmentBuilder(imagePath, { name: 'gate6_intimate.png' });
+                successEmbed.setImage('attachment://gate6_intimate.png');
+                sendOptions.files = [attachment];
             }
+
+            const successMsg = await chamber6.send(sendOptions);
             // Auto-delete after 45 seconds
             setTimeout(() => successMsg.delete().catch(() => {}), 45000);
         }

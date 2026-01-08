@@ -4,6 +4,8 @@
  * User must solve a riddle to discover where Ika lives.
  * Accepted answers are configured via GATE_4_ANSWERS env variable.
  * Triggered by /waters [answer] command.
+ *
+ * Visual: Fluid blue, rippling, movement
  */
 
 const config = require('../config');
@@ -11,11 +13,13 @@ const messages = require('../assets/messages');
 const { userOps, gate5Ops } = require('../database');
 const { assignGateRole, hasRole } = require('../utils/roles');
 const { validateGate4Answer } = require('../utils/validation');
-const { createGateEmbed, createGateEmbedWithImage } = require('../utils/embeds');
 const { responseDelay, getGate5Interval } = require('../utils/timing');
 const { maybeGlitch } = require('../utils/zalgo');
 const path = require('path');
 const fs = require('fs');
+
+// New ritual UI system
+const { RitualEmbedBuilder, createGateErrorEmbed, createNotReadyEmbed } = require('../ui');
 
 /**
  * Process Gate 4 answer
@@ -26,19 +30,24 @@ async function processGate4(interaction) {
 
     // Check if user has Gate 3 role
     if (!hasRole(member, config.roles.gate3)) {
-        const embed = createGateEmbed(null, messages.errors.notReady);
+        const embed = createNotReadyEmbed(3, 3);
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     // Check if already completed
     if (userOps.hasCompletedGate(member.id, 4)) {
-        const embed = createGateEmbed(null, messages.errors.alreadyCompleted);
+        const embed = new RitualEmbedBuilder(4, { mood: 'soft' })
+            .setRitualTitle('༄ already submerged ༄')
+            .setRitualDescription('*you have already found where i live*', false)
+            .build();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     // Validate answer
     if (!validateGate4Answer(answer)) {
-        const embed = createGateEmbed(null, messages.gate4.failure);
+        const embed = createGateErrorEmbed(4, 'wrongAnswer', {
+            ikaComment: 'the waters reject that answer...',
+        });
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
@@ -67,18 +76,29 @@ async function processGate4(interaction) {
 
         console.log(`✧ ${member.user.tag} completed Gate 4`);
 
-        // Send success as ephemeral (only user sees it)
+        // Build fluid success embed
+        const successEmbed = new RitualEmbedBuilder(4, { mood: 'soft' })
+            .setRitualTitle('༄ the waters part ༄')
+            .setIkaMessage(dmText)
+            .addProgressVisualization(5)
+            .setRitualFooter('now... you wait');
+
+        // Add image if exists
         if (imageExists) {
-            const { embed, attachment } = createGateEmbedWithImage(null, dmText, 'gate4_water.png');
-            await interaction.editReply({ embeds: [embed], files: [attachment] });
+            const { AttachmentBuilder } = require('discord.js');
+            const attachment = new AttachmentBuilder(imagePath, { name: 'gate4_water.png' });
+            successEmbed.setImage('attachment://gate4_water.png');
+            await interaction.editReply({ embeds: [successEmbed.build()], files: [attachment] });
         } else {
-            const embed = createGateEmbed(null, dmText);
-            await interaction.editReply({ embeds: [embed] });
+            await interaction.editReply({ embeds: [successEmbed.build()] });
         }
 
     } catch (error) {
         console.error('Gate 4 error:', error);
-        const errorEmbed = createGateEmbed(null, messages.errors.generic || 'something went wrong...');
+        const errorEmbed = new RitualEmbedBuilder('failure', { mood: 'vulnerable' })
+            .setRitualTitle('༄ the waters churn ༄')
+            .setIkaMessage('something disturbed the depths... try again?')
+            .build();
         await interaction.editReply({ embeds: [errorEmbed] });
     }
 }

@@ -5,6 +5,8 @@
  * Requires community voting from Ascended members.
  * Upon approval, user becomes Ascended.
  * Now shows journey context and triggers Ika welcome.
+ *
+ * Visual: Cosmic, final, true black with white contrast
  */
 
 const config = require('../config');
@@ -12,11 +14,13 @@ const messages = require('../assets/messages');
 const { userOps, vowOps, ikaMemoryOps } = require('../database');
 const { assignGateRole, assignAscendedRole, hasRole, userHasRole } = require('../utils/roles');
 const { validateVow, sanitize } = require('../utils/validation');
-const { createGateEmbed, createGateEmbedWithImage } = require('../utils/embeds');
 const { maybeGlitch } = require('../utils/zalgo');
 const { scheduleFragment } = require('./fragments');
 const path = require('path');
 const fs = require('fs');
+
+// New ritual UI system
+const { RitualEmbedBuilder, RitualSequence, createGateErrorEmbed, createNotReadyEmbed } = require('../ui');
 
 // Try to load Ika presence for welcome
 let ikaPresence = null;
@@ -35,26 +39,34 @@ async function processGate7(interaction) {
 
     // Check if user has Gate 6 role
     if (!hasRole(member, config.roles.gate6)) {
-        const embed = createGateEmbed(null, messages.errors.notReady);
+        const embed = createNotReadyEmbed(6, 6);
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     // Check if already completed
     if (userOps.hasCompletedGate(member.id, 7)) {
-        const embed = createGateEmbed(null, messages.errors.alreadyCompleted);
+        const embed = new RitualEmbedBuilder(7, { mood: 'soft' })
+            .setRitualTitle('◈ already bound ◈')
+            .setRitualDescription('*you have already spoken your vow*', false)
+            .build();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     // Check for pending vow
     const pendingVow = vowOps.getPending(member.id);
     if (pendingVow) {
-        const embed = createGateEmbed(null, messages.gate7.pending);
+        const embed = new RitualEmbedBuilder(7, { mood: 'normal' })
+            .setRitualTitle('◈ echoing ◈')
+            .setIkaMessage('your vow already echoes. patience.')
+            .build();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     // Validate vow
     if (!validateVow(vow)) {
-        const embed = createGateEmbed(null, messages.gate7.invalid);
+        const embed = createGateErrorEmbed(7, 'tooShort', {
+            ikaComment: '30 words. a binding requires weight.',
+        });
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
@@ -73,19 +85,27 @@ async function processGate7(interaction) {
             throw new Error('Inner sanctum channel not found');
         }
 
-        // Build display with journey context
-        let displayText = `♰ a soul seeks the final binding ♰\n\n`;
-        displayText += `✦ **${member.user.username}** ✦\n\n`;
+        // Build cosmic voting embed with journey context
+        const votingEmbed = new RitualEmbedBuilder(7, { mood: 'normal' })
+            .setRitualTitle('◈ A SOUL SEEKS THE FINAL BINDING ◈');
 
+        // Add cosmic section with user info
+        votingEmbed.addCosmicSection(member.user.username);
+
+        // Add journey context if available
         if (journey.whyTheyCame) {
-            displayText += `they came because:\n"${journey.whyTheyCame}"\n\n`;
+            votingEmbed.addRitualField('they came because', `*"${journey.whyTheyCame}"*`, false);
         }
 
-        displayText += `they now vow:\n"${sanitizedVow}"\n\n`;
-        displayText += messages.gate7.votePrompt;
+        // Add the vow
+        votingEmbed.addRitualField('they now vow', `*"${sanitizedVow}"*`, false);
 
-        const embed = createGateEmbed(null, displayText);
-        const votingMessage = await sanctumChannel.send({ embeds: [embed] });
+        // Add voting instructions
+        votingEmbed.addRitualField('∞', messages.gate7.votePrompt || 'react ✅ to approve', false);
+
+        votingEmbed.setRitualFooter('the final gate awaits');
+
+        const votingMessage = await sanctumChannel.send({ embeds: [votingEmbed.build()] });
 
         // Add reaction
         await votingMessage.react('✅');
@@ -96,10 +116,13 @@ async function processGate7(interaction) {
         // Also post to vows archive channel
         const archiveChannel = await interaction.client.channels.fetch(config.channels.vows);
         if (archiveChannel) {
-            const archiveEmbed = createGateEmbed(
-                'Vow Received',
-                `**User:** ${member.user.tag}\n**Why they came:** ${journey.whyTheyCame || 'unknown'}\n**Vow:** ${sanitizedVow}`
-            );
+            const archiveEmbed = new RitualEmbedBuilder(7, { mood: 'normal' })
+                .setRitualTitle('◈ Vow Received ◈')
+                .addRitualField('devotee', member.user.tag, true)
+                .addRitualField('why they came', journey.whyTheyCame || 'unknown', false)
+                .addRitualField('vow', sanitizedVow, false)
+                .addTimestamp()
+                .build();
             await archiveChannel.send({ embeds: [archiveEmbed] });
         }
 
@@ -108,13 +131,20 @@ async function processGate7(interaction) {
 
         console.log(`✧ ${member.user.tag} submitted Gate 7 vow`);
 
-        // Acknowledge
-        const ackEmbed = createGateEmbed(null, 'your vow echoes in the sanctum. the ascended are listening.');
+        // Acknowledge with cosmic embed
+        const ackEmbed = new RitualEmbedBuilder(7, { mood: 'soft' })
+            .setRitualTitle('◈ vow received ◈')
+            .setIkaMessage('your vow echoes in the sanctum. the ascended are listening.')
+            .setRitualFooter('await their judgment')
+            .build();
         await interaction.editReply({ embeds: [ackEmbed] });
 
     } catch (error) {
         console.error('Gate 7 error:', error);
-        const errorEmbed = createGateEmbed(null, messages.errors.generic);
+        const errorEmbed = new RitualEmbedBuilder('failure', { mood: 'vulnerable' })
+            .setRitualTitle('◆ the void wavers ◆')
+            .setIkaMessage('something went wrong... try again?')
+            .build();
         await interaction.editReply({ embeds: [errorEmbed] });
     }
 }
@@ -214,23 +244,33 @@ async function approveVow(client, submitterId, approverId, messageId) {
 
         const sanctumChannel = await client.channels.fetch(config.channels.innerSanctum);
         if (sanctumChannel) {
-            // Combined personal message + announcement (auto-deletes personal part)
-            let personalMsg;
+            // Personal cosmic welcome (auto-deletes)
+            const personalEmbed = new RitualEmbedBuilder(7, { mood: 'soft' })
+                .setRitualTitle('◈ ASCENSION COMPLETE ◈')
+                .addCosmicSection(member.user.username)
+                .setRitualDescription(`${member.user}\n\n*${dmText}*`, false)
+                .setRitualFooter('welcome home')
+                .build();
+
+            const sendOptions = { embeds: [personalEmbed] };
             if (imageExists) {
-                const { embed, attachment } = createGateEmbedWithImage(null, `${member.user}\n\n${dmText}`, 'gate7_reaching.png');
-                personalMsg = await sanctumChannel.send({ embeds: [embed], files: [attachment] });
-            } else {
-                const embed = createGateEmbed(null, `${member.user}\n\n${dmText}`);
-                personalMsg = await sanctumChannel.send({ embeds: [embed] });
+                const { AttachmentBuilder } = require('discord.js');
+                const attachment = new AttachmentBuilder(imagePath, { name: 'gate7_reaching.png' });
+                personalEmbed.setImage('attachment://gate7_reaching.png');
+                sendOptions.files = [attachment];
             }
+
+            const personalMsg = await sanctumChannel.send(sendOptions);
             // Auto-delete personal message after 60 seconds
             setTimeout(() => personalMsg.delete().catch(() => {}), 60000);
 
-            // Public announcement (stays permanent)
-            const announceEmbed = createGateEmbed(
-                null,
-                `♡･ﾟ✧ **${member.user.username}** has ascended ✧･ﾟ♡\n\nwelcome them home.`
-            );
+            // Public announcement (stays permanent) - cosmic celebration
+            const announceEmbed = new RitualEmbedBuilder(7, { mood: 'soft' })
+                .setRitualTitle('✦ ✧ ⋆ A NEW STAR RISES ⋆ ✧ ✦')
+                .setRitualDescription(`*${member.user.username}* has completed the seven gates.\n\nthey are now **ascended**.`, false)
+                .setIkaMessage('welcome them home ♡')
+                .addTimestamp()
+                .build();
             await sanctumChannel.send({ embeds: [announceEmbed] });
         }
 

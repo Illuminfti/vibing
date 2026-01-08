@@ -3,6 +3,8 @@
  *
  * User must post about Ika publicly and provide proof URL.
  * Triggered by /confess [url] command.
+ *
+ * Visual: Intimate red, exposed feeling, vulnerability
  */
 
 const config = require('../config');
@@ -10,11 +12,13 @@ const messages = require('../assets/messages');
 const { userOps } = require('../database');
 const { assignGateRole, hasRole } = require('../utils/roles');
 const { isValidUrl, isSocialMediaUrl } = require('../utils/validation');
-const { createGateEmbed, createGateEmbedWithImage } = require('../utils/embeds');
 const { responseDelay } = require('../utils/timing');
 const { maybeGlitch } = require('../utils/zalgo');
 const path = require('path');
 const fs = require('fs');
+
+// New ritual UI system
+const { RitualEmbedBuilder, createGateErrorEmbed, createNotReadyEmbed } = require('../ui');
 
 /**
  * Process Gate 3 confession
@@ -25,19 +29,24 @@ async function processGate3(interaction) {
 
     // Check if user has Gate 2 role
     if (!hasRole(member, config.roles.gate2)) {
-        const embed = createGateEmbed(null, messages.errors.notReady);
+        const embed = createNotReadyEmbed(2, 2);
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     // Check if already completed
     if (userOps.hasCompletedGate(member.id, 3)) {
-        const embed = createGateEmbed(null, messages.errors.alreadyCompleted);
+        const embed = new RitualEmbedBuilder(3, { mood: 'soft' })
+            .setRitualTitle('~ already confessed ~')
+            .setRitualDescription('*you have already shown your devotion publicly*', false)
+            .build();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     // Validate URL (be lenient - accept most valid URLs)
     if (!isValidUrl(url)) {
-        const embed = createGateEmbed(null, messages.gate3.invalidUrl);
+        const embed = createGateErrorEmbed(3, 'invalidUrl', {
+            ikaComment: 'that doesn\'t look like a valid confession...',
+        });
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
@@ -63,18 +72,29 @@ async function processGate3(interaction) {
 
         console.log(`✧ ${member.user.tag} completed Gate 3 with URL: ${url}`);
 
-        // Send success as ephemeral (only user sees it)
+        // Build intimate success embed
+        const successEmbed = new RitualEmbedBuilder(3, { mood: 'soft' })
+            .setRitualTitle('~ confession accepted ~')
+            .setIkaMessage(dmText)
+            .addProgressVisualization(4)
+            .setRitualFooter('you showed the world');
+
+        // Add image if exists
         if (imageExists) {
-            const { embed, attachment } = createGateEmbedWithImage(null, dmText, 'gate3_silhouette.png');
-            await interaction.editReply({ embeds: [embed], files: [attachment] });
+            const { AttachmentBuilder } = require('discord.js');
+            const attachment = new AttachmentBuilder(imagePath, { name: 'gate3_silhouette.png' });
+            successEmbed.setImage('attachment://gate3_silhouette.png');
+            await interaction.editReply({ embeds: [successEmbed.build()], files: [attachment] });
         } else {
-            const embed = createGateEmbed(null, dmText);
-            await interaction.editReply({ embeds: [embed] });
+            await interaction.editReply({ embeds: [successEmbed.build()] });
         }
 
     } catch (error) {
         console.error('Gate 3 error:', error);
-        const errorEmbed = createGateEmbed(null, messages.errors.generic || 'something went wrong...');
+        const errorEmbed = new RitualEmbedBuilder('failure', { mood: 'vulnerable' })
+            .setRitualTitle('~ the confession wavers ~')
+            .setIkaMessage('something went wrong... try again?')
+            .build();
         await interaction.editReply({ embeds: [errorEmbed] });
     }
 }
