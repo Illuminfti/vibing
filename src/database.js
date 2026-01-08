@@ -354,6 +354,45 @@ db.exec(`
         value TEXT,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    -- Archived users table (for inactive user data)
+    CREATE TABLE IF NOT EXISTS archived_users (
+        discord_id TEXT PRIMARY KEY,
+        username TEXT,
+        archived_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        original_data TEXT,
+        memory_data TEXT,
+        gate_progress INTEGER
+    );
+
+    -- === PERFORMANCE INDEXES (v3.3.0) ===
+
+    -- User lookup indexes
+    CREATE INDEX IF NOT EXISTS idx_users_discord_id ON users(discord_id);
+    CREATE INDEX IF NOT EXISTS idx_users_ascended ON users(ascended_at) WHERE ascended_at IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS idx_users_activity ON users(last_activity_at);
+
+    -- Memory lookup indexes
+    CREATE INDEX IF NOT EXISTS idx_memory_user ON ika_memory(user_id);
+    CREATE INDEX IF NOT EXISTS idx_memory_intimacy ON ika_memory(intimacy_stage);
+    CREATE INDEX IF NOT EXISTS idx_memory_relationship ON ika_memory(relationship_level);
+    CREATE INDEX IF NOT EXISTS idx_memory_last_interaction ON ika_memory(last_interaction);
+
+    -- Scheduled tasks indexes
+    CREATE INDEX IF NOT EXISTS idx_gate5_pending ON gate5_schedule(sent, scheduled_for);
+    CREATE INDEX IF NOT EXISTS idx_fragments_pending ON fragments(sent, scheduled_for);
+
+    -- Discovery indexes
+    CREATE INDEX IF NOT EXISTS idx_lore_user ON lore_discoveries(user_id);
+    CREATE INDEX IF NOT EXISTS idx_secrets_user ON secret_discoveries(user_id);
+    CREATE INDEX IF NOT EXISTS idx_whisper_user ON whisper_found(user_id);
+
+    -- DM tracking indexes
+    CREATE INDEX IF NOT EXISTS idx_dm_log_user ON dm_log(user_id, timestamp);
+    CREATE INDEX IF NOT EXISTS idx_dm_prefs_enabled ON dm_preferences(unprompted_enabled);
+
+    -- Fading indexes
+    CREATE INDEX IF NOT EXISTS idx_fading_active ON fading_state(last_interaction);
 `);
 
 // User operations

@@ -97,6 +97,44 @@ module.exports = {
         ethereal: 0xe6e6fa,   // lavender
     },
 
+    // === OPTIMIZATION SETTINGS (v3.3.0) ===
+    optimization: {
+        // Global API rate limit (calls per minute)
+        maxApiCallsPerMinute: parseInt(process.env.MAX_API_CALLS_PER_MIN) || 60,
+
+        // Enable response caching
+        enableCache: process.env.ENABLE_RESPONSE_CACHE !== 'false',
+
+        // Cache TTL in milliseconds (default: 30 min)
+        cacheTtlMs: parseInt(process.env.CACHE_TTL_MS) || 1800000,
+
+        // Enable spam detection
+        enableSpamDetection: process.env.ENABLE_SPAM_DETECTION !== 'false',
+
+        // Use canned responses for simple messages
+        useCannedResponses: process.env.USE_CANNED_RESPONSES !== 'false',
+
+        // AI response chance per tier (lower = less API calls)
+        aiChanceByTier: {
+            new: parseFloat(process.env.AI_CHANCE_NEW) || 0.3,
+            normal: parseFloat(process.env.AI_CHANCE_NORMAL) || 0.5,
+            devoted: parseFloat(process.env.AI_CHANCE_DEVOTED) || 0.8,
+            ascended: parseFloat(process.env.AI_CHANCE_ASCENDED) || 0.95,
+        },
+
+        // Data archival settings
+        archiveInactiveDays: parseInt(process.env.ARCHIVE_INACTIVE_DAYS) || 90,
+
+        // Run cleanup every N hours
+        cleanupIntervalHours: parseInt(process.env.CLEANUP_INTERVAL_HOURS) || 24,
+
+        // Maximum prompt tokens to send to API
+        maxPromptTokens: parseInt(process.env.MAX_PROMPT_TOKENS) || 2000,
+
+        // Maximum response tokens to request from API
+        maxResponseTokens: parseInt(process.env.MAX_RESPONSE_TOKENS) || 300,
+    },
+
     // Gate role mapping
     gateRoles: {
         1: process.env.GATE_1_ROLE_ID,

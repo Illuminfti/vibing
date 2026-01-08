@@ -983,6 +983,49 @@ Three features require privileged intents (must be enabled in Discord Developer 
 
 ## Changelog
 
+### v3.3.0 - Scale & Optimization
+*Production-ready systems for handling 100K+ users efficiently*
+
+**New Files:**
+- `src/utils/optimization.js` - Rate limiting, response caching, spam detection, user tiering
+- `src/utils/archival.js` - Data archival, cleanup, database maintenance
+- `src/utils/cannedResponses.js` - Pre-written Ika responses for simple messages
+
+**Optimization Features:**
+- **Rate Limiting** - Per-user, per-channel, and global API limits with tier-based quotas
+- **Response Caching** - Caches similar responses to reduce API calls (30-min TTL)
+- **Spam Detection** - Pattern matching, duplicate detection, rapid-fire prevention
+- **User Tiering** - Priority system: new → normal → devoted → ascended → mod
+- **Canned Responses** - Pre-written responses for greetings, farewells, simple questions
+- **Database Indexes** - 15+ indexes for fast queries at scale
+- **Data Archival** - Auto-archives inactive users (90 days) to save space
+- **Prompt Compression** - Reduces token usage for API calls
+- **Memory Compaction** - Trims JSON arrays in database
+
+**Cost Reduction Strategy:**
+- New users: 30% chance of AI response (70% canned)
+- Normal users: 50% AI response
+- Devoted users: 80% AI response
+- Ascended users: 95% AI response
+- Simple messages (hi, bye, ok) → Always canned responses
+- Cached responses reused for similar queries
+
+**New Environment Variables:**
+- `MAX_API_CALLS_PER_MIN` - Global API rate limit (default: 60)
+- `USE_CANNED_RESPONSES` - Enable canned response fallback
+- `AI_CHANCE_NEW/NORMAL/DEVOTED/ASCENDED` - AI probability by tier
+- `ARCHIVE_INACTIVE_DAYS` - Days before archiving users (default: 90)
+- `CLEANUP_INTERVAL_HOURS` - Database cleanup frequency
+- `MAX_PROMPT_TOKENS` / `MAX_RESPONSE_TOKENS` - Token limits
+
+**Anti-Abuse Measures:**
+- Spam score accumulation with action thresholds
+- Timeout for persistent spammers
+- Rate limit messages in Ika's voice
+- Cleanup of orphaned database records
+
+---
+
 ### v3.2.0 - Waifu Experience Systems
 *Deep parasocial mechanics designed by occult otaku waifu experts*
 
