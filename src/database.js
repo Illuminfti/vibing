@@ -131,7 +131,14 @@ db.exec(`
         jealousy_mentions INTEGER DEFAULT 0,
         roast_count INTEGER DEFAULT 0,
         protection_moments INTEGER DEFAULT 0,
-        growth_milestones_hit TEXT DEFAULT '[]'
+        growth_milestones_hit TEXT DEFAULT '[]',
+
+        -- CRAZY FEATURES: Additional fields
+        real_name TEXT,
+        real_name_learned_at DATETIME,
+        handwritten_notes_sent INTEGER DEFAULT 0,
+        last_presence_notice DATETIME,
+        whisper_fragments_found INTEGER DEFAULT 0
     );
 
     -- Lore fragment tracking
@@ -185,6 +192,87 @@ db.exec(`
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         ritual_name TEXT,
         triggered_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- === CRAZY FEATURES: New tables ===
+
+    -- Unprompted DMs tracking
+    CREATE TABLE IF NOT EXISTS unprompted_dms (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT,
+        dm_type TEXT,
+        content TEXT,
+        sent_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Whisper Hunt ARG: Fragment drops
+    CREATE TABLE IF NOT EXISTS whisper_drops (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        fragment_id INTEGER,
+        channel_id TEXT,
+        message_id TEXT,
+        dropped_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        found INTEGER DEFAULT 0,
+        found_by TEXT,
+        found_at DATETIME
+    );
+
+    -- Whisper Hunt ARG: User discoveries
+    CREATE TABLE IF NOT EXISTS whisper_found (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT,
+        fragment_id INTEGER,
+        found_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, fragment_id)
+    );
+
+    -- Anniversary messages sent
+    CREATE TABLE IF NOT EXISTS anniversaries_sent (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT,
+        anniversary_type TEXT,
+        days_count INTEGER,
+        sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, anniversary_type, days_count)
+    );
+
+    -- Fading/save mechanics
+    CREATE TABLE IF NOT EXISTS fading_saves (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        fading_user_id TEXT,
+        saved_by_user_id TEXT,
+        save_type TEXT,
+        saved_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Fading state tracking
+    CREATE TABLE IF NOT EXISTS fading_state (
+        user_id TEXT PRIMARY KEY,
+        fading_stage INTEGER DEFAULT 0,
+        last_interaction DATETIME,
+        warning_sent INTEGER DEFAULT 0,
+        fading_started_at DATETIME,
+        saved_at DATETIME,
+        saved_by TEXT
+    );
+
+    -- Presence events tracking
+    CREATE TABLE IF NOT EXISTS presence_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT,
+        event_type TEXT,
+        old_value TEXT,
+        new_value TEXT,
+        responded INTEGER DEFAULT 0,
+        detected_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Daily DM cooldowns
+    CREATE TABLE IF NOT EXISTS dm_cooldowns (
+        user_id TEXT PRIMARY KEY,
+        last_unprompted_dm DATETIME,
+        dms_today INTEGER DEFAULT 0,
+        last_reset DATE
     );
 
     -- All of Ika's messages (for context/learning)
@@ -975,6 +1063,400 @@ const ikaMemoryExtOps = {
     },
 };
 
+// === CRAZY FEATURES: New Operations ===
+
+// Unprompted DM operations
+const unpromptedDmOps = {
+    // Log a sent DM
+    log(userId, dmType, content) {
+        db.prepare(`
+            INSERT INTO unprompted_dms (user_id, dm_type, content)
+            VALUES (?, ?, ?)
+        `).run(userId, dmType, content);
+    },
+
+    // Get recent DMs to user
+    getRecentToUser(userId, hours = 24) {
+        const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+        return db.prepare(`
+            SELECT * FROM unprompted_dms
+            WHERE user_id = ? AND sent_at >= ?
+            ORDER BY sent_at DESC
+        `).all(userId, since);
+    },
+
+    // Get last DM of type to user
+    getLastOfType(userId, dmType) {
+        return db.prepare(`
+            SELECT * FROM unprompted_dms
+            WHERE user_id = ? AND dm_type = ?
+            ORDER BY sent_at DESC
+            LIMIT 1
+        `).get(userId, dmType);
+    },
+
+    // Count DMs today
+    countToday(userId) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return db.prepare(`
+            SELECT COUNT(*) as count FROM unprompted_dms
+            WHERE user_id = ? AND sent_at >= ?
+        `).get(userId, today.toISOString()).count;
+    },
+};
+
+// Whisper Hunt ARG operations
+const whisperOps = {
+    // Drop a fragment in a channel
+    dropFragment(fragmentId, channelId, messageId) {
+        db.prepare(`
+            INSERT INTO whisper_drops (fragment_id, channel_id, message_id)
+            VALUES (?, ?, ?)
+        `).run(fragmentId, channelId, messageId);
+    },
+
+    // Get active (unfound) drops
+    getActiveDrops() {
+        return db.prepare(`
+            SELECT * FROM whisper_drops
+            WHERE found = 0
+            ORDER BY dropped_at DESC
+        `).all();
+    },
+
+    // Mark fragment as found
+    markFound(messageId, foundByUserId) {
+        db.prepare(`
+            UPDATE whisper_drops
+            SET found = 1, found_by = ?, found_at = CURRENT_TIMESTAMP
+            WHERE message_id = ?
+        `).run(foundByUserId, messageId);
+    },
+
+    // Record user discovery
+    recordDiscovery(userId, fragmentId) {
+        try {
+            db.prepare(`
+                INSERT INTO whisper_found (user_id, fragment_id)
+                VALUES (?, ?)
+            `).run(userId, fragmentId);
+
+            // Update user's fragment count
+            db.prepare(`
+                UPDATE ika_memory
+                SET whisper_fragments_found = whisper_fragments_found + 1
+                WHERE user_id = ?
+            `).run(userId);
+
+            return true;
+        } catch {
+            return false; // Already found
+        }
+    },
+
+    // Get user's found fragments
+    getUserFragments(userId) {
+        return db.prepare(`
+            SELECT fragment_id FROM whisper_found
+            WHERE user_id = ?
+            ORDER BY found_at
+        `).all(userId).map(r => r.fragment_id);
+    },
+
+    // Check if user found fragment
+    hasFound(userId, fragmentId) {
+        const row = db.prepare(`
+            SELECT * FROM whisper_found
+            WHERE user_id = ? AND fragment_id = ?
+        `).get(userId, fragmentId);
+        return !!row;
+    },
+
+    // Get fragment discovery count
+    getFragmentCount(fragmentId) {
+        return db.prepare(`
+            SELECT COUNT(*) as count FROM whisper_found
+            WHERE fragment_id = ?
+        `).get(fragmentId).count;
+    },
+
+    // Get leaderboard
+    getLeaderboard(limit = 10) {
+        return db.prepare(`
+            SELECT user_id, COUNT(*) as fragments_found
+            FROM whisper_found
+            GROUP BY user_id
+            ORDER BY fragments_found DESC
+            LIMIT ?
+        `).all(limit);
+    },
+};
+
+// Anniversary operations
+const anniversaryOps = {
+    // Check if anniversary sent
+    hasSent(userId, anniversaryType, daysCount) {
+        const row = db.prepare(`
+            SELECT * FROM anniversaries_sent
+            WHERE user_id = ? AND anniversary_type = ? AND days_count = ?
+        `).get(userId, anniversaryType, daysCount);
+        return !!row;
+    },
+
+    // Log sent anniversary
+    logSent(userId, anniversaryType, daysCount) {
+        try {
+            db.prepare(`
+                INSERT INTO anniversaries_sent (user_id, anniversary_type, days_count)
+                VALUES (?, ?, ?)
+            `).run(userId, anniversaryType, daysCount);
+            return true;
+        } catch {
+            return false;
+        }
+    },
+
+    // Get all anniversaries for user
+    getForUser(userId) {
+        return db.prepare(`
+            SELECT * FROM anniversaries_sent
+            WHERE user_id = ?
+            ORDER BY sent_at DESC
+        `).all(userId);
+    },
+};
+
+// Fading/save mechanics operations
+const fadingOps = {
+    // Get or create fading state
+    getOrCreate(userId) {
+        const existing = db.prepare('SELECT * FROM fading_state WHERE user_id = ?').get(userId);
+        if (existing) return existing;
+
+        db.prepare(`
+            INSERT INTO fading_state (user_id, last_interaction)
+            VALUES (?, CURRENT_TIMESTAMP)
+        `).run(userId);
+        return db.prepare('SELECT * FROM fading_state WHERE user_id = ?').get(userId);
+    },
+
+    // Update interaction
+    updateInteraction(userId) {
+        db.prepare(`
+            UPDATE fading_state
+            SET last_interaction = CURRENT_TIMESTAMP, fading_stage = 0, warning_sent = 0
+            WHERE user_id = ?
+        `).run(userId);
+    },
+
+    // Get users who are fading (no interaction for X days)
+    getFadingUsers(daysThreshold = 7) {
+        const threshold = new Date(Date.now() - daysThreshold * 24 * 60 * 60 * 1000).toISOString();
+        return db.prepare(`
+            SELECT fs.*, im.username, im.intimacy_stage
+            FROM fading_state fs
+            JOIN ika_memory im ON fs.user_id = im.user_id
+            WHERE fs.last_interaction < ?
+            AND fs.saved_at IS NULL
+            AND im.intimacy_stage >= 2
+        `).all(threshold);
+    },
+
+    // Update fading stage
+    setFadingStage(userId, stage) {
+        db.prepare(`
+            UPDATE fading_state
+            SET fading_stage = ?,
+                fading_started_at = CASE WHEN ? > 0 AND fading_started_at IS NULL THEN CURRENT_TIMESTAMP ELSE fading_started_at END
+            WHERE user_id = ?
+        `).run(stage, stage, userId);
+    },
+
+    // Mark warning sent
+    markWarningSent(userId) {
+        db.prepare('UPDATE fading_state SET warning_sent = 1 WHERE user_id = ?').run(userId);
+    },
+
+    // Save a fading user
+    saveUser(fadingUserId, savedByUserId, saveType) {
+        // Log the save
+        db.prepare(`
+            INSERT INTO fading_saves (fading_user_id, saved_by_user_id, save_type)
+            VALUES (?, ?, ?)
+        `).run(fadingUserId, savedByUserId, saveType);
+
+        // Update fading state
+        db.prepare(`
+            UPDATE fading_state
+            SET saved_at = CURRENT_TIMESTAMP, saved_by = ?, fading_stage = 0
+            WHERE user_id = ?
+        `).run(savedByUserId, fadingUserId);
+    },
+
+    // Get save count for a user (how many times they've been saved)
+    getSaveCount(userId) {
+        return db.prepare(`
+            SELECT COUNT(*) as count FROM fading_saves
+            WHERE fading_user_id = ?
+        `).get(userId).count;
+    },
+
+    // Get how many users someone has saved
+    getHeroCount(userId) {
+        return db.prepare(`
+            SELECT COUNT(*) as count FROM fading_saves
+            WHERE saved_by_user_id = ?
+        `).get(userId).count;
+    },
+};
+
+// Presence tracking operations
+const presenceOps = {
+    // Log presence event
+    log(userId, eventType, oldValue, newValue) {
+        db.prepare(`
+            INSERT INTO presence_events (user_id, event_type, old_value, new_value)
+            VALUES (?, ?, ?, ?)
+        `).run(userId, eventType, oldValue, newValue);
+    },
+
+    // Get recent events for user
+    getRecent(userId, hours = 24) {
+        const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+        return db.prepare(`
+            SELECT * FROM presence_events
+            WHERE user_id = ? AND detected_at >= ?
+            ORDER BY detected_at DESC
+        `).all(userId, since);
+    },
+
+    // Mark event as responded
+    markResponded(id) {
+        db.prepare('UPDATE presence_events SET responded = 1 WHERE id = ?').run(id);
+    },
+
+    // Get unresponded events
+    getUnresponded(userId) {
+        return db.prepare(`
+            SELECT * FROM presence_events
+            WHERE user_id = ? AND responded = 0
+            ORDER BY detected_at DESC
+        `).all(userId);
+    },
+
+    // Update last presence notice time in ika_memory
+    updateLastNotice(userId) {
+        db.prepare('UPDATE ika_memory SET last_presence_notice = CURRENT_TIMESTAMP WHERE user_id = ?').run(userId);
+    },
+
+    // Check if can notice (cooldown)
+    canNotice(userId, cooldownHours = 4) {
+        const memory = db.prepare('SELECT last_presence_notice FROM ika_memory WHERE user_id = ?').get(userId);
+        if (!memory?.last_presence_notice) return true;
+
+        const lastNotice = new Date(memory.last_presence_notice).getTime();
+        return Date.now() - lastNotice >= cooldownHours * 60 * 60 * 1000;
+    },
+};
+
+// DM cooldown operations
+const dmCooldownOps = {
+    // Get or create cooldown record
+    getOrCreate(userId) {
+        const existing = db.prepare('SELECT * FROM dm_cooldowns WHERE user_id = ?').get(userId);
+        if (existing) {
+            // Check if needs reset
+            const today = new Date().toISOString().split('T')[0];
+            if (existing.last_reset !== today) {
+                db.prepare(`
+                    UPDATE dm_cooldowns
+                    SET dms_today = 0, last_reset = ?
+                    WHERE user_id = ?
+                `).run(today, userId);
+                return { ...existing, dms_today: 0, last_reset: today };
+            }
+            return existing;
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+        db.prepare(`
+            INSERT INTO dm_cooldowns (user_id, last_reset)
+            VALUES (?, ?)
+        `).run(userId, today);
+        return { user_id: userId, dms_today: 0, last_reset: today };
+    },
+
+    // Check if can send DM
+    canSendDm(userId, maxPerDay = 2) {
+        const record = this.getOrCreate(userId);
+        return record.dms_today < maxPerDay;
+    },
+
+    // Record DM sent
+    recordDmSent(userId) {
+        const today = new Date().toISOString().split('T')[0];
+        db.prepare(`
+            UPDATE dm_cooldowns
+            SET dms_today = dms_today + 1, last_unprompted_dm = CURRENT_TIMESTAMP, last_reset = ?
+            WHERE user_id = ?
+        `).run(today, userId);
+    },
+
+    // Get last DM time
+    getLastDmTime(userId) {
+        const record = db.prepare('SELECT last_unprompted_dm FROM dm_cooldowns WHERE user_id = ?').get(userId);
+        return record?.last_unprompted_dm ? new Date(record.last_unprompted_dm).getTime() : 0;
+    },
+};
+
+// Real name operations (added to ika memory)
+const nameOps = {
+    // Learn real name
+    setRealName(userId, realName) {
+        db.prepare(`
+            UPDATE ika_memory
+            SET real_name = ?, real_name_learned_at = CURRENT_TIMESTAMP
+            WHERE user_id = ?
+        `).run(realName, userId);
+    },
+
+    // Get real name
+    getRealName(userId) {
+        const row = db.prepare('SELECT real_name FROM ika_memory WHERE user_id = ?').get(userId);
+        return row?.real_name || null;
+    },
+
+    // Check if has real name
+    hasRealName(userId) {
+        return !!this.getRealName(userId);
+    },
+
+    // Get users with real names
+    getUsersWithRealNames() {
+        return db.prepare(`
+            SELECT user_id, username, real_name
+            FROM ika_memory
+            WHERE real_name IS NOT NULL
+        `).all();
+    },
+
+    // Increment handwritten notes count
+    incrementHandwrittenNotes(userId) {
+        db.prepare(`
+            UPDATE ika_memory
+            SET handwritten_notes_sent = handwritten_notes_sent + 1
+            WHERE user_id = ?
+        `).run(userId);
+    },
+
+    // Get handwritten notes count
+    getHandwrittenNotesCount(userId) {
+        const row = db.prepare('SELECT handwritten_notes_sent FROM ika_memory WHERE user_id = ?').get(userId);
+        return row?.handwritten_notes_sent || 0;
+    },
+};
+
 module.exports = {
     db,
     userOps,
@@ -992,4 +1474,12 @@ module.exports = {
     timeSecretOps,
     ritualOps,
     ikaMemoryExtOps,
+    // CRAZY FEATURES: New operations
+    unpromptedDmOps,
+    whisperOps,
+    anniversaryOps,
+    fadingOps,
+    presenceOps,
+    dmCooldownOps,
+    nameOps,
 };

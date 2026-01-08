@@ -3,6 +3,7 @@
  *
  * Central export for all Ika-related functionality.
  * Enhanced with viral optimization systems.
+ * v2.2.0: Added experimental features
  */
 
 const presence = require('./presence');
@@ -25,6 +26,15 @@ const roasts = require('./roasts');
 const growth = require('./growth');
 const rituals = require('./rituals');
 const intimacy = require('./intimacy');
+
+// Experimental features (v2.2.0)
+const unprompted = require('./unprompted');
+const presenceAwareness = require('./presenceAwareness');
+const whisperHunt = require('./whisperHunt');
+const anniversaries = require('./anniversaries');
+const fading = require('./fading');
+const names = require('./names');
+const handwriting = require('./handwriting');
 
 module.exports = {
     // Presence system
@@ -129,4 +139,48 @@ module.exports = {
     checkStageIncrease: intimacy.checkStageIncrease,
     getStageAnnouncement: intimacy.getStageAnnouncement,
     getStageProgress: intimacy.getStageProgress,
+
+    // === EXPERIMENTAL FEATURES (v2.2.0) ===
+
+    // Unprompted DMs
+    runUnpromptedDmCheck: unprompted.runUnpromptedDmCheck,
+    sendUnpromptedDm: unprompted.sendUnpromptedDm,
+    schedulePostVulnerabilityDm: unprompted.schedulePostVulnerabilityDm,
+
+    // Presence Awareness
+    handlePresenceUpdate: presenceAwareness.handlePresenceUpdate,
+    handleUserUpdate: presenceAwareness.handleUserUpdate,
+    getPresenceSummary: presenceAwareness.getPresenceSummary,
+
+    // Whisper Hunt ARG
+    maybeDropFragment: whisperHunt.maybeDropFragment,
+    checkFragmentDiscovery: whisperHunt.checkFragmentDiscovery,
+    getWhisperProgress: whisperHunt.getProgress,
+    assembleWhisper: whisperHunt.assembleWhisper,
+    getWhisperLeaderboard: whisperHunt.getLeaderboard,
+
+    // Anniversaries
+    checkUserAnniversary: anniversaries.checkAnniversary,
+    sendAnniversaryMessage: anniversaries.sendAnniversaryMessage,
+    runDailyAnniversaryCheck: anniversaries.runDailyAnniversaryCheck,
+    getUpcomingAnniversaries: anniversaries.getUpcomingAnniversaries,
+
+    // Fading/Save Mechanic
+    calculateFadingStage: fading.calculateFadingStage,
+    getFadingUsers: fading.getFadingUsers,
+    saveUser: fading.saveUser,
+    checkSaveAttempt: fading.checkSaveAttempt,
+    runFadingCheck: fading.runFadingCheck,
+    getFadingStatus: fading.getFadingStatus,
+
+    // Real Name Learning
+    handleNameLearning: names.handleNameLearning,
+    personalizeWithName: names.personalizeWithName,
+    getNameContext: names.getNameContext,
+    maybeAskForName: names.maybeAskForName,
+
+    // Handwritten Notes
+    generateHandwrittenNote: handwriting.generateNote,
+    sendHandwrittenNote: handwriting.sendHandwrittenNote,
+    shouldSendHandwrittenNote: handwriting.shouldSendHandwrittenNote,
 };

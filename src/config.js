@@ -49,6 +49,32 @@ module.exports = {
         cooldownMs: 60000,              // Min time between responses
         maxContextMessages: 20,         // Messages to include as context
         vulnerabilityWindows: 2,        // Number per day
+
+        // === EXPERIMENTAL FEATURES (v2.2.0) ===
+
+        // Unprompted DMs
+        unpromptedDmsEnabled: process.env.IKA_UNPROMPTED_DMS_ENABLED !== 'false',
+        maxDmsPerDay: parseInt(process.env.IKA_MAX_DMS_PER_DAY) || 2,
+
+        // Presence Awareness
+        presenceAwarenessEnabled: process.env.IKA_PRESENCE_AWARENESS_ENABLED !== 'false',
+        presenceCooldownHours: parseInt(process.env.IKA_PRESENCE_COOLDOWN_HOURS) || 4,
+
+        // Whisper Hunt ARG
+        whisperHuntEnabled: process.env.IKA_WHISPER_HUNT_ENABLED !== 'false',
+        whisperDropChance: parseFloat(process.env.IKA_WHISPER_DROP_CHANCE) || 0.015,
+
+        // Anniversaries
+        anniversariesEnabled: process.env.IKA_ANNIVERSARIES_ENABLED !== 'false',
+
+        // Fading/Save Mechanic
+        fadingEnabled: process.env.IKA_FADING_ENABLED !== 'false',
+
+        // Real Name Learning
+        namesEnabled: process.env.IKA_NAMES_ENABLED !== 'false',
+
+        // Handwritten Notes
+        handwrittenNotesEnabled: process.env.IKA_HANDWRITTEN_NOTES_ENABLED !== 'false',
     },
 
     // Timing constants (in milliseconds)
