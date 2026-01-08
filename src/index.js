@@ -14,6 +14,9 @@ const path = require('path');
 const config = require('./config');
 
 // Create client with required intents
+// Note: GuildPresences and MessageContent are PRIVILEGED intents
+// that must be enabled in the Discord Developer Portal under:
+// Bot Settings > Privileged Gateway Intents
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -21,7 +24,8 @@ const client = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildMessageReactions,
         GatewayIntentBits.DirectMessages,
-        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.MessageContent,       // Privileged: read message content
+        GatewayIntentBits.GuildPresences,       // Privileged: presence awareness
     ],
     partials: [
         Partials.Message,

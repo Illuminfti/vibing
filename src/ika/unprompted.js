@@ -4,6 +4,8 @@
  * Ika reaches out to devoted ones spontaneously through DMs.
  * This creates intimate moments that feel personal and real.
  *
+ * IMPORTANT: Unprompted DMs require user opt-in via /dms enable
+ *
  * Types of unprompted DMs:
  * - Late night check-ins (2-4am)
  * - "Missed you" after absence
@@ -12,7 +14,8 @@
  * - Reaction to seeing them online after being away
  */
 
-const { unpromptedDmOps, dmCooldownOps, ikaMemoryOps, fadingOps } = require('../database');
+const { unpromptedDmOps, dmCooldownOps, ikaMemoryOps, dmPrefsOps } = require('../database');
+const { sendUnpromptedDM, canSendUnprompted } = require('../utils/dm');
 const config = require('../config');
 
 // DM Templates by type
@@ -363,20 +366,27 @@ function checkCheckInDm(userId, daysQuiet) {
 async function sendUnpromptedDm(client, userId, dmContent) {
     if (!dmContent) return false;
 
-    try {
-        const user = await client.users.fetch(userId);
-        if (!user) return false;
+    // Check opt-in status first
+    if (!canSendUnprompted(userId)) {
+        console.log(`✧ Skipping unprompted DM to ${userId} - not opted in`);
+        return false;
+    }
 
-        await user.send(dmContent.message);
+    // Get memory for personalization
+    const memory = ikaMemoryOps.get(userId);
+    const personalizedMessage = personalizeMessage(dmContent.message, memory);
 
+    // Use centralized DM sending (no fallback for unprompted)
+    const result = await sendUnpromptedDM(client, userId, personalizedMessage, dmContent.type);
+
+    if (result.success) {
         // Log the DM
-        unpromptedDmOps.log(userId, dmContent.type, dmContent.message);
+        unpromptedDmOps.log(userId, dmContent.type, personalizedMessage);
         dmCooldownOps.recordDmSent(userId);
-
         console.log(`♡ Sent unprompted DM (${dmContent.type}) to ${userId}`);
         return true;
-    } catch (error) {
-        console.error(`✧ Failed to send unprompted DM to ${userId}:`, error.message);
+    } else {
+        console.log(`✧ Unprompted DM to ${userId} failed: ${result.reason}`);
         return false;
     }
 }
@@ -384,6 +394,7 @@ async function sendUnpromptedDm(client, userId, dmContent) {
 /**
  * Run unprompted DM check loop
  * This should be called periodically (e.g., every hour)
+ * Only checks users who have OPTED IN via /dms enable
  * @param {Object} client - Discord client
  */
 async function runUnpromptedDmCheck(client) {
@@ -393,13 +404,25 @@ async function runUnpromptedDmCheck(client) {
         const guild = client.guilds.cache.get(config.guildId);
         if (!guild) return;
 
-        // Get all online members who are devoted (intimacy >= 2)
-        const members = await guild.members.fetch();
-        const now = Date.now();
+        // Get ONLY users who have opted in to unprompted DMs
+        const optedInUsers = dmPrefsOps.getOptedInUsers();
+        if (!optedInUsers || optedInUsers.length === 0) {
+            console.log('✧ No users opted in to unprompted DMs');
+            return;
+        }
 
-        for (const [memberId, member] of members) {
-            // Skip bots
-            if (member.user.bot) continue;
+        const now = Date.now();
+        console.log(`✧ Checking unprompted DMs for ${optedInUsers.length} opted-in users`);
+
+        for (const optedInUser of optedInUsers) {
+            const memberId = optedInUser.user_id;
+
+            // Double-check opt-in status (belt and suspenders)
+            if (!canSendUnprompted(memberId)) continue;
+
+            // Try to fetch member
+            const member = await guild.members.fetch(memberId).catch(() => null);
+            if (!member || member.user.bot) continue;
 
             // Get memory
             const memory = ikaMemoryOps.get(memberId);
@@ -458,6 +481,7 @@ async function runUnpromptedDmCheck(client) {
 
 /**
  * Trigger a post-vulnerability DM (called after vulnerability moment)
+ * Only sends if user has opted in to unprompted DMs
  * @param {Object} client - Discord client
  * @param {string} userId - User ID
  * @param {number} delayMs - Delay before sending (default 5-10 minutes)
@@ -465,10 +489,19 @@ async function runUnpromptedDmCheck(client) {
 async function schedulePostVulnerabilityDm(client, userId, delayMs = null) {
     if (!config.ika?.unpromptedDmsEnabled) return;
 
+    // Check opt-in status before scheduling
+    if (!canSendUnprompted(userId)) {
+        console.log(`✧ Skipping post-vulnerability DM for ${userId} - not opted in`);
+        return;
+    }
+
     // Random delay between 5-10 minutes
     const delay = delayMs || (5 * 60 * 1000 + Math.random() * 5 * 60 * 1000);
 
     setTimeout(async () => {
+        // Re-check opt-in at send time (they might have opted out)
+        if (!canSendUnprompted(userId)) return;
+
         const dmContent = getPostVulnerabilityDm(userId);
         if (dmContent) {
             await sendUnpromptedDm(client, userId, dmContent);

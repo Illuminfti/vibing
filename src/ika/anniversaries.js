@@ -9,6 +9,7 @@
  */
 
 const { anniversaryOps, ikaMemoryOps, userOps } = require('../database');
+const { sendToUser } = require('../utils/dm');
 const config = require('../config');
 
 // Anniversary types and their messages
@@ -176,16 +177,14 @@ function getAnniversaryMessage(anniversary) {
 
 /**
  * Send anniversary message and mark as sent
+ * Uses DM with channel fallback for reliability
  * @param {Object} client - Discord client
  * @param {string} userId - User ID
  * @param {Object} anniversary - Anniversary info
- * @returns {Promise<boolean>} Success
+ * @returns {Promise<boolean|Object>} Success or handwritten request
  */
 async function sendAnniversaryMessage(client, userId, anniversary) {
     try {
-        const user = await client.users.fetch(userId);
-        if (!user) return false;
-
         const message = getAnniversaryMessage(anniversary);
 
         // Check if this should be a handwritten note
@@ -204,15 +203,26 @@ async function sendAnniversaryMessage(client, userId, anniversary) {
             };
         }
 
-        // Send regular DM
-        await user.send(message);
+        // Send DM with channel fallback (anniversaries are important, use fallback)
+        const result = await sendToUser(client, userId, message, {
+            fallbackChannelId: config.channels?.innerSanctum,
+            dmType: `anniversary_${anniversary.type}`,
+            allowFallback: true,
+            mentionInFallback: true,
+        });
 
-        // Mark as sent
-        const daysOrCount = anniversary.days || anniversary.count;
-        anniversaryOps.logSent(userId, anniversary.type, daysOrCount);
+        if (result.success) {
+            // Mark as sent
+            const daysOrCount = anniversary.days || anniversary.count;
+            anniversaryOps.logSent(userId, anniversary.type, daysOrCount);
 
-        console.log(`♡ Sent ${anniversary.type} anniversary (${daysOrCount}) to ${userId}`);
-        return true;
+            const method = result.method === 'channel' ? '(via channel)' : '(via DM)';
+            console.log(`♡ Sent ${anniversary.type} anniversary (${daysOrCount}) to ${userId} ${method}`);
+            return true;
+        } else {
+            console.error(`Failed to send anniversary to ${userId}: ${result.reason}`);
+            return false;
+        }
     } catch (error) {
         console.error(`Error sending anniversary to ${userId}:`, error.message);
         return false;

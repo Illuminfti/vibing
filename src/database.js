@@ -43,7 +43,11 @@ db.exec(`
 
         -- Idle tracking
         last_activity_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        idle_warning_sent INTEGER DEFAULT 0
+        idle_warning_sent INTEGER DEFAULT 0,
+
+        -- DM LIMITATIONS FIX: DM tracking
+        dms_work INTEGER DEFAULT 1,
+        gate_dm_failures INTEGER DEFAULT 0
     );
 
     -- Track first completions for each gate
@@ -138,7 +142,13 @@ db.exec(`
         real_name_learned_at DATETIME,
         handwritten_notes_sent INTEGER DEFAULT 0,
         last_presence_notice DATETIME,
-        whisper_fragments_found INTEGER DEFAULT 0
+        whisper_fragments_found INTEGER DEFAULT 0,
+
+        -- DM LIMITATIONS FIX: DM capability tracking
+        dms_enabled INTEGER DEFAULT 1,
+        dm_failures INTEGER DEFAULT 0,
+        last_dm_attempt DATETIME,
+        unprompted_opt_in INTEGER DEFAULT 0
     );
 
     -- Lore fragment tracking
@@ -273,6 +283,37 @@ db.exec(`
         last_unprompted_dm DATETIME,
         dms_today INTEGER DEFAULT 0,
         last_reset DATE
+    );
+
+    -- === DM LIMITATIONS FIX: New tables ===
+
+    -- DM attempt log for debugging
+    CREATE TABLE IF NOT EXISTS dm_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT,
+        dm_type TEXT,
+        content_preview TEXT,
+        success INTEGER,
+        fallback_used INTEGER DEFAULT 0,
+        error_code TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Unprompted DM opt-in tracking
+    CREATE TABLE IF NOT EXISTS dm_preferences (
+        user_id TEXT PRIMARY KEY,
+        unprompted_enabled INTEGER DEFAULT 0,
+        opted_in_at DATETIME,
+        opted_out_at DATETIME
+    );
+
+    -- Fragment delivery log
+    CREATE TABLE IF NOT EXISTS fragment_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT,
+        gate_number INTEGER,
+        delivered_via TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     -- All of Ika's messages (for context/learning)
@@ -1457,6 +1498,166 @@ const nameOps = {
     },
 };
 
+// === DM LIMITATIONS FIX: New operations ===
+
+// DM status and logging operations
+const dmOps = {
+    // Check if we should attempt DM to this user
+    checkDMStatus(userId) {
+        const record = db.prepare(`
+            SELECT dms_enabled, dm_failures, last_dm_attempt
+            FROM ika_memory
+            WHERE user_id = ?
+        `).get(userId);
+
+        if (!record) {
+            return { shouldSkip: false }; // New user, try DM
+        }
+
+        // Skip if explicitly disabled
+        if (record.dms_enabled === 0) {
+            return { shouldSkip: true, reason: 'User has DMs disabled' };
+        }
+
+        // Skip if too many failures (max 3)
+        if (record.dm_failures >= 3) {
+            return { shouldSkip: true, reason: 'Too many DM failures' };
+        }
+
+        return { shouldSkip: false };
+    },
+
+    // Increment DM failure count
+    incrementDMFailures(userId) {
+        db.prepare(`
+            UPDATE ika_memory
+            SET dm_failures = dm_failures + 1, last_dm_attempt = CURRENT_TIMESTAMP
+            WHERE user_id = ?
+        `).run(userId);
+    },
+
+    // Reset DM failures on successful DM
+    resetDMFailures(userId) {
+        db.prepare(`
+            UPDATE ika_memory
+            SET dm_failures = 0, dms_enabled = 1
+            WHERE user_id = ?
+        `).run(userId);
+    },
+
+    // Mark user as having DMs disabled
+    markDMsDisabled(userId) {
+        db.prepare(`
+            UPDATE ika_memory
+            SET dms_enabled = 0
+            WHERE user_id = ?
+        `).run(userId);
+    },
+
+    // Log DM attempt
+    logDMAttempt(userId, dmType, contentPreview, success, errorCode = null, fallbackUsed = false) {
+        const preview = typeof contentPreview === 'string'
+            ? contentPreview.substring(0, 100)
+            : (contentPreview?.content || '').substring(0, 100);
+
+        db.prepare(`
+            INSERT INTO dm_log (user_id, dm_type, content_preview, success, fallback_used, error_code)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `).run(userId, dmType, preview, success ? 1 : 0, fallbackUsed ? 1 : 0, errorCode);
+    },
+
+    // Get DM log for user
+    getDMLog(userId, limit = 20) {
+        return db.prepare(`
+            SELECT * FROM dm_log
+            WHERE user_id = ?
+            ORDER BY timestamp DESC
+            LIMIT ?
+        `).all(userId, limit);
+    },
+
+    // Get DM failure stats
+    getDMStats() {
+        return {
+            totalAttempts: db.prepare('SELECT COUNT(*) as count FROM dm_log').get().count,
+            failures: db.prepare('SELECT COUNT(*) as count FROM dm_log WHERE success = 0').get().count,
+            fallbacks: db.prepare('SELECT COUNT(*) as count FROM dm_log WHERE fallback_used = 1').get().count,
+            usersWithDMsDisabled: db.prepare('SELECT COUNT(*) as count FROM ika_memory WHERE dms_enabled = 0').get().count,
+        };
+    },
+};
+
+// DM preferences operations (opt-in for unprompted DMs)
+const dmPrefsOps = {
+    // Check if user has opted into unprompted DMs
+    canSendUnprompted(userId) {
+        const pref = db.prepare(`
+            SELECT unprompted_enabled FROM dm_preferences WHERE user_id = ?
+        `).get(userId);
+
+        return pref?.unprompted_enabled === 1;
+    },
+
+    // Opt in to unprompted DMs
+    optIn(userId) {
+        db.prepare(`
+            INSERT INTO dm_preferences (user_id, unprompted_enabled, opted_in_at)
+            VALUES (?, 1, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id) DO UPDATE SET
+                unprompted_enabled = 1,
+                opted_in_at = CURRENT_TIMESTAMP
+        `).run(userId);
+    },
+
+    // Opt out of unprompted DMs
+    optOut(userId) {
+        db.prepare(`
+            INSERT INTO dm_preferences (user_id, unprompted_enabled, opted_out_at)
+            VALUES (?, 0, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id) DO UPDATE SET
+                unprompted_enabled = 0,
+                opted_out_at = CURRENT_TIMESTAMP
+        `).run(userId);
+    },
+
+    // Get preference status
+    getStatus(userId) {
+        return db.prepare(`
+            SELECT * FROM dm_preferences WHERE user_id = ?
+        `).get(userId);
+    },
+
+    // Get all opted-in users
+    getOptedInUsers() {
+        return db.prepare(`
+            SELECT p.user_id, m.username, m.intimacy_stage, m.last_interaction
+            FROM dm_preferences p
+            JOIN ika_memory m ON p.user_id = m.user_id
+            WHERE p.unprompted_enabled = 1
+            AND m.dms_enabled = 1
+            AND m.dm_failures < 3
+        `).all();
+    },
+};
+
+// Fragment log operations
+const fragmentLogOps = {
+    log(userId, gateNumber, deliveredVia) {
+        db.prepare(`
+            INSERT INTO fragment_log (user_id, gate_number, delivered_via)
+            VALUES (?, ?, ?)
+        `).run(userId, gateNumber, deliveredVia);
+    },
+
+    getForUser(userId) {
+        return db.prepare(`
+            SELECT * FROM fragment_log
+            WHERE user_id = ?
+            ORDER BY timestamp DESC
+        `).all(userId);
+    },
+};
+
 module.exports = {
     db,
     userOps,
@@ -1482,4 +1683,8 @@ module.exports = {
     presenceOps,
     dmCooldownOps,
     nameOps,
+    // DM LIMITATIONS FIX: New operations
+    dmOps,
+    dmPrefsOps,
+    fragmentLogOps,
 };

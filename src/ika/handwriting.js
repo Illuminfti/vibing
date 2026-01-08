@@ -17,6 +17,7 @@ const { createCanvas, registerFont } = require('canvas');
 const fs = require('fs');
 const path = require('path');
 const { nameOps, ikaMemoryOps } = require('../database');
+const { sendToUser } = require('../utils/dm');
 const config = require('../config');
 
 // Paper/note styles
@@ -247,6 +248,7 @@ function randomBetween(min, max) {
 
 /**
  * Generate and send a handwritten note
+ * Uses DM with channel fallback for reliability
  * @param {Object} client - Discord client
  * @param {string} userId - User ID to send to
  * @param {string} message - The message
@@ -255,6 +257,8 @@ function randomBetween(min, max) {
  */
 async function sendHandwrittenNote(client, userId, message, options = {}) {
     if (!config.ika?.handwrittenNotesEnabled) return false;
+
+    let tempPath = null;
 
     try {
         const user = await client.users.fetch(userId);
@@ -270,31 +274,46 @@ async function sendHandwrittenNote(client, userId, message, options = {}) {
         });
 
         // Save temporarily
-        const tempPath = path.join(__dirname, '..', '..', 'temp', `note_${Date.now()}.png`);
+        tempPath = path.join(__dirname, '..', '..', 'temp', `note_${Date.now()}.png`);
         const tempDir = path.dirname(tempPath);
         if (!fs.existsSync(tempDir)) {
             fs.mkdirSync(tempDir, { recursive: true });
         }
         fs.writeFileSync(tempPath, noteBuffer);
 
-        // Send as attachment
-        await user.send({
-            content: "...",
-            files: [{
+        // Send using DM fallback system (handwritten notes are special, use fallback)
+        const result = await sendToUser(client, userId, "...", {
+            fallbackChannelId: config.channels?.innerSanctum,
+            dmType: 'handwritten_note',
+            allowFallback: true,
+            mentionInFallback: true,
+            attachments: [{
                 attachment: tempPath,
                 name: 'from_ika.png',
             }],
         });
 
-        // Clean up
-        fs.unlinkSync(tempPath);
+        // Clean up temp file
+        if (tempPath && fs.existsSync(tempPath)) {
+            fs.unlinkSync(tempPath);
+        }
 
-        // Update count
-        nameOps.incrementHandwrittenNotes(userId);
+        if (result.success) {
+            // Update count
+            nameOps.incrementHandwrittenNotes(userId);
 
-        console.log(`♡ Sent handwritten note to ${userId}`);
-        return true;
+            const method = result.method === 'channel' ? '(via channel)' : '(via DM)';
+            console.log(`♡ Sent handwritten note to ${userId} ${method}`);
+            return true;
+        } else {
+            console.error(`Failed to send handwritten note to ${userId}: ${result.reason}`);
+            return false;
+        }
     } catch (error) {
+        // Clean up temp file on error
+        if (tempPath && fs.existsSync(tempPath)) {
+            fs.unlinkSync(tempPath);
+        }
         console.error('Error sending handwritten note:', error);
         return false;
     }

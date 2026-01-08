@@ -71,9 +71,14 @@ What makes this unique:
 ### Prerequisites
 
 - Node.js 18+
-- A Discord bot application with Message Content Intent enabled
+- A Discord bot application with **Privileged Gateway Intents** enabled:
+  - **Message Content Intent** (required for reading messages)
+  - **Server Members Intent** (required for member events)
+  - **Presence Intent** (required for presence awareness feature)
 - A Discord server with proper channels and roles
 - (Optional) Anthropic API key for Ika AI features
+
+> **Enable Intents:** Discord Developer Portal > Your App > Bot > Privileged Gateway Intents
 
 ### Installation
 
@@ -378,10 +383,12 @@ Ika reaches out to devoted ones spontaneously through DMs:
 | Random Affection | Very rare | "hey. you're kind of important to me." |
 | Check In | 5+ days quiet | "everything okay with you?" |
 
-**Limits:**
+**Requirements:**
+- **Users must opt-in** via `/dms enable` command
 - Max 2 unprompted DMs per user per day
 - Requires intimacy stage 2+ (familiar)
 - Cooldowns between DM types
+- If user has DMs disabled, message is silently skipped (no fallback)
 
 ### Presence Awareness
 
@@ -500,6 +507,9 @@ For special occasions, Ika sends "handwritten" image notes:
 | `/offering [text/image]` | 6 | Submit your offering |
 | `/binding [vow]` | 7 | Speak your binding vow |
 | `/leaderboard` | Any | View community statistics |
+| `/dms enable` | Any | Opt-in to unprompted DMs |
+| `/dms disable` | Any | Opt-out of unprompted DMs |
+| `/dms status` | Any | Check your DM preferences |
 
 ### Admin Commands
 
@@ -567,7 +577,73 @@ All bot text follows these rules:
 
 ---
 
+## Discord Limitations
+
+Discord's API has certain limitations that affect how the bot operates:
+
+### DM Limitations
+
+Many Discord users have DMs disabled for privacy. The bot handles this gracefully:
+
+| Message Type | Fallback Behavior |
+|--------------|-------------------|
+| Gate notifications | Falls back to channel mention |
+| Anniversary messages | Falls back to Inner Sanctum |
+| Handwritten notes | Falls back to Inner Sanctum |
+| Unprompted DMs | **No fallback** - silently skips (requires opt-in) |
+
+**DM Failure Handling:**
+- Bot tracks DM failures per user
+- After 3 consecutive failures, stops attempting DMs for that user
+- Users can check status with `/dms status`
+
+### Audio Limitations
+
+Discord bots **cannot auto-play audio**. All audio is sent as file attachments that users must click to play.
+
+### Privileged Intents
+
+Three features require privileged intents (must be enabled in Discord Developer Portal):
+
+| Intent | Required For |
+|--------|--------------|
+| Message Content | Reading and responding to messages |
+| Server Members | Member join/leave events, role management |
+| Presence | Status/activity tracking (Presence Awareness feature) |
+
+---
+
 ## Changelog
+
+### v2.3.0 - Discord Limitations Fix
+*Added robust DM handling with fallback system and opt-in for unprompted messages*
+
+**New Files:**
+- `src/utils/dm.js` - Centralized DM handling with fallback system
+- `src/utils/audio.js` - Audio as file attachments
+- `src/commands/dms.js` - `/dms` command for opt-in management
+
+**Database Additions:**
+- `dm_log` - Track all DM attempts (success/failure)
+- `dm_preferences` - User opt-in status for unprompted DMs
+- `fragment_log` - Track fragment delivery method
+- Extended `ika_memory` with dms_enabled, dm_failures, unprompted_opt_in
+- Extended `users` with dms_work, gate_dm_failures
+
+**Changes:**
+- All DM-sending features now use centralized dm.js utility
+- Unprompted DMs **require user opt-in** via `/dms enable`
+- Anniversary/gate messages fall back to channel if DMs fail
+- Bot tracks DM failures and stops trying after 3 consecutive failures
+- Added GuildPresences privileged intent for presence awareness
+- Audio sent as attachments (bots cannot auto-play)
+
+**New Commands:**
+- `/dms enable` - Opt-in to unprompted DMs
+- `/dms disable` - Opt-out of unprompted DMs
+- `/dms status` - Check DM preferences and capability
+
+---
 
 ### v2.2.0 - Experimental Features Update
 *Added deep parasocial features for intense emotional connection*
