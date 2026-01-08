@@ -4,7 +4,7 @@
  * Additional hidden behaviors and special responses.
  */
 
-const { createGateEmbed } = require('./embeds');
+const { RitualEmbedBuilder } = require('../ui');
 const messages = require('../assets/messages');
 const { delay } = require('./timing');
 
@@ -12,7 +12,10 @@ const { delay } = require('./timing');
  * Handle when user tries to access a gate they haven't unlocked
  */
 async function handleSkipAttempt(interaction) {
-    const embed = createGateEmbed(null, messages.easterEggs.skipAttempt);
+    // Use failure theme for skip attempts
+    const embed = new RitualEmbedBuilder('failure', { mood: 'normal' })
+        .setRitualDescription(messages.easterEggs.skipAttempt, false)
+        .build();
     return interaction.reply({ embeds: [embed], ephemeral: true });
 }
 

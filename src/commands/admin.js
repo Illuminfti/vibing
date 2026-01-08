@@ -3,7 +3,7 @@ const config = require('../config');
 const messages = require('../assets/messages');
 const { userOps, gate5Ops, offeringOps, vowOps } = require('../database');
 const { assignGateRole, removeAllGateRoles, assignAscendedRole, hasRole, getMembersWithRole } = require('../utils/roles');
-const { createGateEmbed } = require('../utils/embeds');
+const { RitualEmbedBuilder, createIkaEmbed } = require('../ui');
 const { formatDuration } = require('../utils/timing');
 const { approveOffering } = require('../gates/gate6');
 const { approveVow } = require('../gates/gate7');
@@ -94,7 +94,9 @@ module.exports = {
     async execute(interaction) {
         // Check for mod role
         if (!hasRole(interaction.member, config.roles.mod)) {
-            const embed = createGateEmbed(null, 'you lack the authority for this.');
+            const embed = new RitualEmbedBuilder('failure', { mood: 'normal' })
+                .setRitualDescription('you lack the authority for this.', false)
+                .build();
             return interaction.reply({ embeds: [embed], ephemeral: true });
         }
 
@@ -167,7 +169,9 @@ async function handleReset(interaction) {
     userOps.reset(user.id);
     gate5Ops.clear(user.id);
 
-    const embed = createGateEmbed(null, messages.admin.resetSuccess(user.username));
+    const embed = new RitualEmbedBuilder('ritual', { mood: 'normal' })
+        .setRitualDescription(messages.admin.resetSuccess(user.username), false)
+        .build();
     await interaction.reply({ embeds: [embed], ephemeral: true });
 
     console.log(`✧ admin ${interaction.user.tag} reset ${user.tag}`);
@@ -202,7 +206,9 @@ async function handleAdvance(interaction) {
         userOps.ascend(user.id);
     }
 
-    const embed = createGateEmbed(null, messages.admin.advanceSuccess(user.username, gate));
+    const embed = new RitualEmbedBuilder('ritual', { mood: 'normal' })
+        .setRitualDescription(messages.admin.advanceSuccess(user.username, gate), false)
+        .build();
     await interaction.reply({ embeds: [embed], ephemeral: true });
 
     console.log(`✧ admin ${interaction.user.tag} advanced ${user.tag} to gate ${gate}`);
@@ -215,7 +221,9 @@ async function handleApprove(interaction) {
     const pendingOffering = offeringOps.getPending(user.id);
     if (pendingOffering) {
         await approveOffering(interaction.client, user.id, interaction.user.id, pendingOffering.message_id);
-        const embed = createGateEmbed(null, messages.admin.approveSuccess(user.username) + ' (gate 6 offering)');
+        const embed = new RitualEmbedBuilder('ritual', { mood: 'normal' })
+            .setRitualDescription(messages.admin.approveSuccess(user.username) + ' (gate 6 offering)', false)
+            .build();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
@@ -223,11 +231,15 @@ async function handleApprove(interaction) {
     const pendingVow = vowOps.getPending(user.id);
     if (pendingVow) {
         await approveVow(interaction.client, user.id, interaction.user.id, pendingVow.message_id);
-        const embed = createGateEmbed(null, messages.admin.approveSuccess(user.username) + ' (gate 7 vow)');
+        const embed = new RitualEmbedBuilder('ritual', { mood: 'normal' })
+            .setRitualDescription(messages.admin.approveSuccess(user.username) + ' (gate 7 vow)', false)
+            .build();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    const embed = createGateEmbed(null, `${user.username} has no pending submissions.`);
+    const embed = new RitualEmbedBuilder('failure', { mood: 'normal' })
+        .setRitualDescription(`${user.username} has no pending submissions.`, false)
+        .build();
     await interaction.reply({ embeds: [embed], ephemeral: true });
 }
 
@@ -237,7 +249,9 @@ async function handleTestMode(interaction) {
     // Update config (note: this won't persist across restarts)
     config.testMode = enabled;
 
-    const embed = createGateEmbed(null, enabled ? messages.admin.testModeOn : messages.admin.testModeOff);
+    const embed = new RitualEmbedBuilder('ritual', { mood: 'normal' })
+        .setRitualDescription(enabled ? messages.admin.testModeOn : messages.admin.testModeOff, false)
+        .build();
     await interaction.reply({ embeds: [embed], ephemeral: true });
 
     console.log(`✧ admin ${interaction.user.tag} set test mode to ${enabled}`);
@@ -257,7 +271,10 @@ async function handleBroadcast(interaction) {
 
     for (const member of members) {
         try {
-            const embed = createGateEmbed(null, message);
+            // Use gate-specific theming for broadcast messages
+            const embed = new RitualEmbedBuilder(gate, { mood: 'normal' })
+                .setRitualDescription(message, false)
+                .build();
             await member.user.send({ embeds: [embed] });
             sent++;
         } catch {
@@ -265,7 +282,9 @@ async function handleBroadcast(interaction) {
         }
     }
 
-    const embed = createGateEmbed(null, `broadcast complete.\nsent: ${sent}\nfailed: ${failed}`);
+    const embed = new RitualEmbedBuilder('ritual', { mood: 'normal' })
+        .setRitualDescription(`broadcast complete.\nsent: ${sent}\nfailed: ${failed}`, false)
+        .build();
     await interaction.editReply({ embeds: [embed] });
 
     console.log(`✧ admin ${interaction.user.tag} broadcast to gate ${gate}: ${sent} sent, ${failed} failed`);

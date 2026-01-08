@@ -7,7 +7,7 @@
 
 const config = require('../config');
 const { fragmentOps } = require('../database');
-const { createGateEmbed } = require('../utils/embeds');
+const { createIkaEmbed } = require('../ui');
 const { randomInt } = require('../utils/timing');
 
 // Fragment messages for each gate
@@ -100,7 +100,8 @@ async function sendFragment(client, fragment) {
         const message = getFragmentMessage(fragment.gate_number);
         if (!message) return;
 
-        const embed = createGateEmbed(null, message);
+        // Use the new UI system - fragments are intimate Ika messages
+        const embed = createIkaEmbed(message, 'soft');
         await user.send({ embeds: [embed] });
 
         console.log(`✧ Sent fragment to ${user.tag} for gate ${fragment.gate_number}`);

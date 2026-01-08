@@ -14,7 +14,7 @@ const {
     containsImBack,
     containsLonely,
 } = require('../utils/validation');
-const { createGateEmbed, createGateEmbedWithImage } = require('../utils/embeds');
+const { RitualEmbedBuilder, createIkaEmbed } = require('../ui');
 const { assignGateRole } = require('../utils/roles');
 const { delay, responseDelay, randomInt } = require('../utils/timing');
 const { maybeGlitch } = require('../utils/zalgo');
@@ -148,15 +148,19 @@ async function handleWaitingRoom(message) {
         const imageExists = fs.existsSync(imagePath);
 
         let successMsg;
+        // Build Gate 1 success embed using new UI system
+        const embed = new RitualEmbedBuilder(1, { mood: 'soft', userId: message.author.id })
+            .setRitualTitle('The Calling')
+            .setRitualDescription(`${message.author}\n\n${dmText}`)
+            .setRitualFooter()
+            .build();
+
         if (imageExists) {
-            const { embed, attachment } = createGateEmbedWithImage(
-                null,
-                `${message.author}\n\n${dmText}`,
-                'gate1_eyes.png'
-            );
+            const { AttachmentBuilder } = require('discord.js');
+            const attachment = new AttachmentBuilder(imagePath, { name: 'gate1_eyes.png' });
+            embed.setImage('attachment://gate1_eyes.png');
             successMsg = await message.channel.send({ embeds: [embed], files: [attachment] });
         } else {
-            const embed = createGateEmbed(null, `${message.author}\n\n${dmText}`);
             successMsg = await message.channel.send({ embeds: [embed] });
         }
 
@@ -362,7 +366,8 @@ async function handleEasterEggResponse(message, responseArray, probability, alwa
     await delay(randomInt(1000, 3000));
 
     try {
-        const embed = createGateEmbed(null, response);
+        // Use the new UI system for Easter egg responses
+        const embed = createIkaEmbed(response, 'soft');
 
         // Always reply in channel - works for everyone
         await message.reply({ embeds: [embed] });
@@ -407,10 +412,12 @@ async function postChamberPuzzle(client, chamberNumber, puzzleText) {
             7: 'THE BINDING',
         };
 
-        const embed = createGateEmbed(
-            `♰ GATE ${gateNumber} ♰\n${titles[gateNumber] || ''}`,
-            puzzleText
-        );
+        // Use the new UI system with gate-specific theming
+        const embed = new RitualEmbedBuilder(gateNumber, { mood: 'normal' })
+            .setRitualTitle(`GATE ${gateNumber}: ${titles[gateNumber] || ''}`)
+            .setRitualDescription(puzzleText)
+            .setRitualFooter()
+            .build();
 
         await channel.send({ embeds: [embed] });
     } catch (error) {

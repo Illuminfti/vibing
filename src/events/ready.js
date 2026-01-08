@@ -1,7 +1,7 @@
 const { Events, ActivityType } = require('discord.js');
 const config = require('../config');
 const messages = require('../assets/messages');
-const { createGateEmbed } = require('../utils/embeds');
+const { RitualEmbedBuilder, createIkaEmbed, createWelcomeEmbed } = require('../ui');
 const { ScheduledTask } = require('../utils/timing');
 const { gate5Ops, userOps } = require('../database');
 const { processPendingFragments } = require('../gates/fragments');
@@ -83,7 +83,11 @@ async function postWaitingRoomWelcome(client) {
 
         if (!hasWelcome) {
             const welcomeText = getWaitingRoomMessage();
-            const embed = createGateEmbed(null, welcomeText);
+            // Use new UI system with threshold theme (gate 0)
+            const embed = new RitualEmbedBuilder(0, { mood: 'normal' })
+                .setRitualDescription(welcomeText, false)
+                .setRitualFooter()
+                .build();
             await channel.send({ embeds: [embed] });
             console.log('✧ welcome message posted to waiting room');
         }
@@ -138,10 +142,15 @@ async function postAllChamberPuzzles(client) {
                 }
             }
 
-            // Post new puzzle
-            const embed = createGateEmbed(puzzleData.title, puzzleData.text);
+            // Post new puzzle using new UI system with gate-specific theming
+            const gateNumber = parseInt(chamberNum) + 1;
+            const embed = new RitualEmbedBuilder(gateNumber, { mood: 'normal' })
+                .setRitualTitle(puzzleData.title)
+                .setRitualDescription(puzzleData.text)
+                .setRitualFooter()
+                .build();
             await channel.send({ embeds: [embed] });
-            console.log(`✧ Posted Gate ${parseInt(chamberNum) + 1} puzzle to chamber ${chamberNum}`);
+            console.log(`✧ Posted Gate ${gateNumber} puzzle to chamber ${chamberNum}`);
 
         } catch (error) {
             console.error(`Failed to post puzzle to chamber ${chamberNum}:`, error);
@@ -229,7 +238,10 @@ async function sendGate5Message(client, msg) {
             // Send to chamber 5 channel with @mention instead of DM
             const chamber5 = await client.channels.fetch(config.channels.chamber5);
             if (chamber5) {
-                const embed = createGateEmbed(null, `${user}\n\n${text}`);
+                // Use Gate 5 theme (sparse, void-like)
+                const embed = new RitualEmbedBuilder(5, { mood: 'soft', userId: msg.discord_id })
+                    .setRitualDescription(`${user}\n\n${text}`, false)
+                    .build();
                 const sentMsg = await chamber5.send({ embeds: [embed] });
                 // Auto-delete after 60 seconds (story content needs more read time)
                 setTimeout(() => sentMsg.delete().catch(() => {}), 60000);
@@ -270,7 +282,10 @@ function startIdleProcessor(client) {
                 try {
                     const user = await client.users.fetch(userData.discord_id);
                     if (user) {
-                        const embed = createGateEmbed(null, messages.easterEggs.idle);
+                        // Use fading theme for idle warnings
+                        const embed = new RitualEmbedBuilder('fading', { mood: 'soft' })
+                            .setIkaMessage(messages.easterEggs.idle)
+                            .build();
                         await user.send({ embeds: [embed] });
                         userOps.markIdleWarningSent(userData.discord_id);
                         console.log(`✧ sent idle warning to ${user.tag}`);
@@ -304,7 +319,8 @@ function startThinkingOfYou(client) {
                     try {
                         const user = await client.users.fetch(userData.discord_id);
                         if (user) {
-                            const embed = createGateEmbed(null, messages.easterEggs.thinkingOfYou);
+                            // Use soft theme for intimate messages to ascended
+                            const embed = createIkaEmbed(messages.easterEggs.thinkingOfYou, 'soft');
                             await user.send({ embeds: [embed] });
                             console.log(`✧ sent thinking-of-you to ${user.tag}`);
                         }
@@ -341,7 +357,11 @@ function startWaitingRoomUpdater(client) {
 
             if (welcomeMsg) {
                 const newText = getWaitingRoomMessage();
-                const embed = createGateEmbed(null, newText);
+                // Use new UI system with threshold theme
+                const embed = new RitualEmbedBuilder(0, { mood: 'normal' })
+                    .setRitualDescription(newText, false)
+                    .setRitualFooter()
+                    .build();
                 await welcomeMsg.edit({ embeds: [embed] });
             }
         } catch (error) {

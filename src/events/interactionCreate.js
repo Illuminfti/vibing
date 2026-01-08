@@ -1,5 +1,5 @@
 const { Events, InteractionType } = require('discord.js');
-const { createGateEmbed } = require('../utils/embeds');
+const { RitualEmbedBuilder } = require('../ui');
 const messages = require('../assets/messages');
 
 module.exports = {
@@ -42,7 +42,10 @@ async function handleSlashCommand(interaction) {
     } catch (error) {
         console.error(`Error executing ${interaction.commandName}:`, error);
 
-        const errorEmbed = createGateEmbed(null, messages.errors.generic);
+        // Use the failure theme for error messages
+        const errorEmbed = new RitualEmbedBuilder('failure', { mood: 'normal' })
+            .setRitualDescription(messages.errors.generic, false)
+            .build();
 
         if (interaction.replied || interaction.deferred) {
             await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
