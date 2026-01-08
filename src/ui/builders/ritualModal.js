@@ -116,12 +116,17 @@ const MODAL_PRESETS = {
 class RitualModalBuilder {
     /**
      * Create a new RitualModalBuilder
-     * @param {string} customId - Unique modal ID
+     * @param {string} customId - Unique modal ID (optional, can set later)
      * @param {number|string} gateOrTitle - Gate number or custom title
      */
-    constructor(customId, gateOrTitle = 0) {
-        this.modal = new ModalBuilder().setCustomId(customId);
+    constructor(customId = null, gateOrTitle = 0) {
+        this.modal = new ModalBuilder();
         this.fields = [];
+
+        // Set customId if provided
+        if (customId) {
+            this.modal.setCustomId(customId);
+        }
 
         // Set title
         if (typeof gateOrTitle === 'number') {
@@ -129,6 +134,26 @@ class RitualModalBuilder {
         } else {
             this.modal.setTitle(gateOrTitle);
         }
+    }
+
+    /**
+     * Set modal custom ID
+     * @param {string} customId - Unique modal ID
+     * @returns {RitualModalBuilder}
+     */
+    setCustomId(customId) {
+        this.modal.setCustomId(customId);
+        return this;
+    }
+
+    /**
+     * Set gate-specific title
+     * @param {number} gateNumber - Gate number for themed title
+     * @returns {RitualModalBuilder}
+     */
+    setGateTitle(gateNumber) {
+        this.modal.setTitle(GATE_MODAL_TITLES[gateNumber] || GATE_MODAL_TITLES[0]);
+        return this;
     }
 
     /**

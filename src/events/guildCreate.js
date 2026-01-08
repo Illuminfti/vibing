@@ -5,7 +5,7 @@
  * Offers automatic setup or guides the admin.
  */
 
-const { Events, ActionRowBuilder, PermissionFlagsBits } = require('discord.js');
+const { Events, PermissionFlagsBits } = require('discord.js');
 const { runSetup, generateInviteUrl } = require('../utils/setup');
 const config = require('../config');
 const { RitualEmbedBuilder, RitualButtonBuilder } = require('../ui');
@@ -124,19 +124,10 @@ This will automatically create:
         .setRitualFooter('Only server administrators can run setup')
         .build();
 
-    const row = new ActionRowBuilder()
-        .addComponents(
-            new RitualButtonBuilder()
-                .setCustomId('seven_gates_setup')
-                .setLabel('✧ Run Setup')
-                .fromPreset('continue')
-                .build(),
-            new RitualButtonBuilder()
-                .setCustomId('seven_gates_info')
-                .setLabel('Learn More')
-                .fromPreset('hint')
-                .build(),
-        );
+    const row = new RitualButtonBuilder(1)
+        .addPreset('continue', 'seven_gates_setup', { label: '✧ Run Setup' })
+        .addPreset('hint', 'seven_gates_info', { label: 'Learn More' })
+        .buildRow();
 
     const message = await channel.send({ embeds: [embed], components: [row] });
 

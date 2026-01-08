@@ -629,6 +629,11 @@ const gate5Ops = {
         }
     },
 
+    // Alias for scheduleMessages
+    schedule(discordId, intervalMs) {
+        return this.scheduleMessages(discordId, intervalMs);
+    },
+
     // Get pending messages that should be sent
     getPendingMessages() {
         const now = new Date().toISOString();

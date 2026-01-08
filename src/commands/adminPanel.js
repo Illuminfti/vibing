@@ -929,17 +929,15 @@ async function showResetConfirmation(interaction, scope, targetUser) {
         .build();
     embed.setColor(scope === 'full' ? 0xE74C3C : 0xF39C12);
 
-    const row = new ActionRowBuilder().addComponents(
-        new RitualButtonBuilder()
-            .setCustomId(`admin_reset_${scope}_${targetUser.id}`)
-            .setLabel('Confirm Reset')
-            .setStyle(ButtonStyle.Danger)
-            .build(),
-        new RitualButtonBuilder()
-            .fromPreset('cancel')
-            .setCustomId('admin_cancel')
-            .build()
-    );
+    const row = new RitualButtonBuilder()
+        .addButton({
+            customId: `admin_reset_${scope}_${targetUser.id}`,
+            label: 'Confirm Reset',
+            emoji: '⚠',
+            style: ButtonStyle.Danger,
+        })
+        .addPreset('cancel', 'admin_cancel')
+        .buildRow();
 
     await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
 }
