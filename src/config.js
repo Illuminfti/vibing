@@ -133,6 +133,10 @@ module.exports = {
 
         // Maximum response tokens to request from API
         maxResponseTokens: parseInt(process.env.MAX_RESPONSE_TOKENS) || 300,
+
+        // === COST MODE (v3.3.1) ===
+        // Options: 'normal', 'low', 'ultraLow', 'minimal', 'free'
+        costMode: process.env.COST_MODE || 'ultraLow',
     },
 
     // Gate role mapping

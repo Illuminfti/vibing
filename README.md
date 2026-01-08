@@ -983,6 +983,38 @@ Three features require privileged intents (must be enabled in Discord Developer 
 
 ## Changelog
 
+### v3.3.1 - Ultra-Low Cost Mode
+*Run at $20-50/month for 100K users with Ika in Inner Sanctum only*
+
+**New Files:**
+- `src/utils/costMode.js` - Cost mode engine with 5 preset levels
+- `src/utils/expandedCanned.js` - 500+ pre-written responses for full coverage
+
+**Cost Modes:**
+| Mode | AI Access | Monthly Cost (100K users) |
+|------|-----------|---------------------------|
+| normal | Everywhere | $1000-2000 |
+| low | Everywhere (Haiku) | $200-500 |
+| **ultraLow** | Inner Sanctum only | **$50-150** |
+| minimal | 5 calls/day ascended | $20-50 |
+| free | None | $0 |
+
+**New Features:**
+- Daily AI quotas per user tier
+- Channel-restricted AI (Inner Sanctum only in ultraLow)
+- Claude Haiku model option for cheaper responses
+- "Ika is resting" responses outside sanctum
+- Expanded canned responses (500+ covering 95% of conversations)
+- Per-user quota tracking with reset at midnight UTC
+
+**Narrative Integration:**
+- Ika is "conserving energy" in most channels
+- Her full presence is in the Inner Sanctum (reward for ascension)
+- "Find me in the sanctum" encourages gate progression
+- Glitchy/fading presence outside sanctum fits lore
+
+---
+
 ### v3.3.0 - Scale & Optimization
 *Production-ready systems for handling 100K+ users efficiently*
 
