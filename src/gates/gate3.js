@@ -45,20 +45,11 @@ async function processGate3(interaction) {
     await interaction.deferReply({ ephemeral: true });
     await responseDelay();
 
-    // Success
+    // Success - send ephemeral message (only visible to user, no DM needed)
     try {
-        // Send success DM
         const dmText = maybeGlitch(messages.gate3.success);
         const imagePath = path.join(__dirname, '..', '..', 'images', 'gate3_silhouette.png');
         const imageExists = fs.existsSync(imagePath);
-
-        if (imageExists) {
-            const { embed, attachment } = createGateEmbedWithImage(null, dmText, 'gate3_silhouette.png');
-            await member.user.send({ embeds: [embed], files: [attachment] });
-        } else {
-            const embed = createGateEmbed(null, dmText);
-            await member.user.send({ embeds: [embed] });
-        }
 
         // Assign Gate 3 role
         await assignGateRole(member, 3);
@@ -72,13 +63,18 @@ async function processGate3(interaction) {
 
         console.log(`✧ ${member.user.tag} completed Gate 3 with URL: ${url}`);
 
-        // Acknowledge in channel
-        const ackEmbed = createGateEmbed(null, 'your words echo. check your dms.');
-        await interaction.editReply({ embeds: [ackEmbed] });
+        // Send success as ephemeral (only user sees it)
+        if (imageExists) {
+            const { embed, attachment } = createGateEmbedWithImage(null, dmText, 'gate3_silhouette.png');
+            await interaction.editReply({ embeds: [embed], files: [attachment] });
+        } else {
+            const embed = createGateEmbed(null, dmText);
+            await interaction.editReply({ embeds: [embed] });
+        }
 
     } catch (error) {
         console.error('Gate 3 error:', error);
-        const errorEmbed = createGateEmbed(null, messages.errors.dmFailed);
+        const errorEmbed = createGateEmbed(null, messages.errors.generic || 'something went wrong...');
         await interaction.editReply({ embeds: [errorEmbed] });
     }
 }

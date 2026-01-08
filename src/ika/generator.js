@@ -42,6 +42,42 @@ if (config.anthropicApiKey && config.ika.enabled) {
 }
 
 /**
+ * Resolve Discord mentions to readable usernames
+ * Turns <@123456789> into @username
+ */
+function resolveMentions(content, mentions) {
+    if (!content || !mentions) return content || '';
+
+    let resolved = content;
+
+    // Resolve user mentions
+    if (mentions.users) {
+        mentions.users.forEach(user => {
+            const mentionPattern = new RegExp(`<@!?${user.id}>`, 'g');
+            resolved = resolved.replace(mentionPattern, `@${user.username}`);
+        });
+    }
+
+    // Resolve role mentions
+    if (mentions.roles) {
+        mentions.roles.forEach(role => {
+            const rolePattern = new RegExp(`<@&${role.id}>`, 'g');
+            resolved = resolved.replace(rolePattern, `@${role.name}`);
+        });
+    }
+
+    // Resolve channel mentions
+    if (mentions.channels) {
+        mentions.channels.forEach(channel => {
+            const channelPattern = new RegExp(`<#${channel.id}>`, 'g');
+            resolved = resolved.replace(channelPattern, `#${channel.name}`);
+        });
+    }
+
+    return resolved;
+}
+
+/**
  * Generate a response from Ika
  * Enhanced with viral optimization priority system
  */
@@ -207,10 +243,14 @@ async function generateResponse(options) {
     const userMemory = userId ? ikaMemoryOps.get(userId) : null;
     const userTier = userMemory?.relationship_level || 'new';
 
-    // Check cost mode decision
-    const aiDecision = shouldUseAi(userId, userTier, channelType, {
-        mentioned: type === 'mentioned',
-    });
+    // Skip cost mode check if forceGenerate is true (inner sanctum always uses AI)
+    let aiDecision = { useAi: true, reason: 'forced' };
+    if (!forceGenerate) {
+        // Check cost mode decision
+        aiDecision = shouldUseAi(userId, userTier, channelType, {
+            mentioned: type === 'mentioned',
+        });
+    }
 
     if (!aiDecision.useAi) {
         // AI not allowed - use alternative response
@@ -285,21 +325,34 @@ async function generateResponse(options) {
     // Build system prompt with all context
     const systemPrompt = buildSystemPrompt(currentMood, memoryContext, intimacyInstructions);
 
-    // Build context string (last 30 messages)
-    const contextMessages = context?.slice(-30) || [];
+    // Build context string (last 8 messages including bot, excluding trigger)
+    const triggerId = trigger?.id;
+    const botId = trigger?.client?.user?.id;
+    const contextMessages = (context || [])
+        .filter(m => m.id !== triggerId)  // Only exclude the trigger message
+        .slice(-8);  // Keep last 8 for conversation flow
     const contextText = contextMessages.length > 0
-        ? contextMessages.map(m => `${m.author?.username || 'unknown'}: ${m.content}`).join('\n')
+        ? contextMessages.map(m => {
+            const isBot = m.author?.bot || m.author?.id === botId;
+            const name = isBot ? 'Ika (you)' : (m.author?.username || 'unknown');
+            // Resolve mentions to usernames
+            const content = resolveMentions(m.content, m.mentions);
+            return `${name}: ${content}`;
+        }).join('\n')
         : '';
+
+    // Also resolve mentions in the trigger content
+    const triggerContent = trigger ? resolveMentions(trigger.content, trigger.mentions) : '';
 
     // Build user prompt based on type
     let userPrompt;
     switch (type) {
         case 'mentioned':
-            userPrompt = `Recent chat:\n${contextText}\n\nResponding to ${trigger.author.username}: "${trigger.content}"\n\nReply naturally as Ika. Be yourself - confident, maybe teasing, maybe soft, depending on the moment. One message.`;
+            userPrompt = `RESPOND ONLY TO THE CURRENT MESSAGE. The chat history is just for context - do NOT address old messages.\n\nChat history (background only):\n${contextText}\n\n===\nCURRENT MESSAGE TO RESPOND TO:\n${trigger.author.username}: "${triggerContent}"\n===\n\nReply to "${triggerContent}" naturally as Ika. One short message. Do not reference or respond to older messages from the history.`;
             break;
 
         case 'passive':
-            userPrompt = `Recent chat:\n${contextText}\n\nSomething caught your interest. Chime in naturally as Ika. One message.`;
+            userPrompt = `RESPOND ONLY TO THE CURRENT MESSAGE. The chat history is just for context - do NOT address old messages.\n\nChat history (background only):\n${contextText}\n\n===\nCURRENT MESSAGE:\n${trigger.author.username}: "${triggerContent}"\n===\n\nRespond to "${triggerContent}" naturally as Ika. One short message.`;
             break;
 
         case 'moment':
@@ -307,11 +360,11 @@ async function generateResponse(options) {
             break;
 
         case 'vulnerable':
-            userPrompt = `Recent chat:\n${contextText}\n\nYou're feeling vulnerable right now and want to share something real. Be genuine as Ika. One message.`;
+            userPrompt = `Recent chat history:\n${contextText}\n\nYou're feeling vulnerable right now and want to share something real. Be genuine as Ika. One message.`;
             break;
 
         default:
-            userPrompt = `Recent chat:\n${contextText}\n\nRespond naturally as Ika. One message.`;
+            userPrompt = `RESPOND ONLY TO THE CURRENT MESSAGE.\n\nChat history (background only):\n${contextText}\n\n===\nCURRENT MESSAGE:\n${trigger?.author?.username || 'someone'}: "${triggerContent}"\n===\n\nRespond to the current message naturally as Ika. One short message.`;
     }
 
     try {

@@ -51,23 +51,14 @@ async function processGate5(interaction) {
     await interaction.deferReply({ ephemeral: true });
     await responseDelay();
 
-    // Success
+    // Success - send ephemeral message (only visible to user, no DM needed)
     try {
         // Sanitize and prepare reason
         const sanitizedReason = sanitize(reason);
 
-        // Send success DM with their answer echoed back
         const dmText = maybeGlitch(messages.gate5.success(sanitizedReason));
         const imagePath = path.join(__dirname, '..', '..', 'images', 'gate5_awake.png');
         const imageExists = fs.existsSync(imagePath);
-
-        if (imageExists) {
-            const { embed, attachment } = createGateEmbedWithImage(null, dmText, 'gate5_awake.png');
-            await member.user.send({ embeds: [embed], files: [attachment] });
-        } else {
-            const embed = createGateEmbed(null, dmText);
-            await member.user.send({ embeds: [embed] });
-        }
 
         // Assign Gate 5 role
         await assignGateRole(member, 5);
@@ -84,13 +75,18 @@ async function processGate5(interaction) {
 
         console.log(`✧ ${member.user.tag} completed Gate 5`);
 
-        // Acknowledge in channel
-        const ackEmbed = createGateEmbed(null, 'she heard you. check your dms.');
-        await interaction.editReply({ embeds: [ackEmbed] });
+        // Send success as ephemeral (only user sees it)
+        if (imageExists) {
+            const { embed, attachment } = createGateEmbedWithImage(null, dmText, 'gate5_awake.png');
+            await interaction.editReply({ embeds: [embed], files: [attachment] });
+        } else {
+            const embed = createGateEmbed(null, dmText);
+            await interaction.editReply({ embeds: [embed] });
+        }
 
     } catch (error) {
         console.error('Gate 5 error:', error);
-        const errorEmbed = createGateEmbed(null, messages.errors.dmFailed);
+        const errorEmbed = createGateEmbed(null, messages.errors.generic || 'something went wrong...');
         await interaction.editReply({ embeds: [errorEmbed] });
     }
 }

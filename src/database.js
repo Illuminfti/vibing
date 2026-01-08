@@ -927,6 +927,17 @@ const ikaMessageOps = {
         return db.prepare('SELECT * FROM ika_messages ORDER BY timestamp DESC LIMIT ?').all(limit);
     },
 
+    // Get recent conversations with a specific user (for long-term memory)
+    getUserConversations(userId, limit = 10) {
+        return db.prepare(`
+            SELECT trigger_content, response, timestamp
+            FROM ika_messages
+            WHERE trigger_user_id = ?
+            ORDER BY timestamp DESC
+            LIMIT ?
+        `).all(userId, limit);
+    },
+
     getTodayCount() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);

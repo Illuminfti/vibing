@@ -199,6 +199,7 @@ function setupOfferingVoteCollector(client, message, submitterId) {
 
 /**
  * Approve an offering
+ * Sends success message to channel with @mention (works with DMs closed)
  */
 async function approveOffering(client, submitterId, approverId, messageId) {
     try {
@@ -215,17 +216,23 @@ async function approveOffering(client, submitterId, approverId, messageId) {
         // Schedule fragment DM
         scheduleFragment(submitterId, 6);
 
-        // Send success DM
+        // Send success message to chamber 6 with @mention (auto-deletes)
         const dmText = maybeGlitch(messages.gate6.success);
         const imagePath = path.join(__dirname, '..', '..', 'images', 'gate6_intimate.png');
         const imageExists = fs.existsSync(imagePath);
 
-        if (imageExists) {
-            const { embed, attachment } = createGateEmbedWithImage(null, dmText, 'gate6_intimate.png');
-            await member.user.send({ embeds: [embed], files: [attachment] });
-        } else {
-            const embed = createGateEmbed(null, dmText);
-            await member.user.send({ embeds: [embed] });
+        const chamber6 = await client.channels.fetch(config.channels.chamber6);
+        if (chamber6) {
+            let successMsg;
+            if (imageExists) {
+                const { embed, attachment } = createGateEmbedWithImage(null, `${member.user}\n\n${dmText}`, 'gate6_intimate.png');
+                successMsg = await chamber6.send({ embeds: [embed], files: [attachment] });
+            } else {
+                const embed = createGateEmbed(null, `${member.user}\n\n${dmText}`);
+                successMsg = await chamber6.send({ embeds: [embed] });
+            }
+            // Auto-delete after 45 seconds
+            setTimeout(() => successMsg.delete().catch(() => {}), 45000);
         }
 
         console.log(`✧ ${member.user.tag} Gate 6 offering approved by ${approverId}`);

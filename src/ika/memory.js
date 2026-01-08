@@ -4,7 +4,7 @@
  * Handles what Ika remembers about each person and how she references it.
  */
 
-const { ikaMemoryOps, userOps } = require('../database');
+const { ikaMemoryOps, ikaMessageOps, userOps } = require('../database');
 
 /**
  * Get full memory context for a user (for AI prompt)
@@ -43,6 +43,16 @@ function getMemoryContext(userId) {
     // Inside jokes
     if (memory.inside_jokes && memory.inside_jokes.length > 0) {
         context += `Inside jokes: ${memory.inside_jokes.map(j => j.joke).join(', ')}\n`;
+    }
+
+    // Past conversations (long-term memory)
+    const pastConversations = ikaMessageOps.getUserConversations(userId, 5);
+    if (pastConversations && pastConversations.length > 0) {
+        context += '\nPast conversations you remember:\n';
+        // Reverse to show oldest first (chronological)
+        pastConversations.reverse().forEach(conv => {
+            context += `- They said: "${truncate(conv.trigger_content, 60)}" → You replied: "${truncate(conv.response, 60)}"\n`;
+        });
     }
 
     // Relationship level specific instructions

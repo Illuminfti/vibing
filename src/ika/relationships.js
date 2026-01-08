@@ -115,6 +115,7 @@ async function checkMilestone(userId) {
 
 /**
  * Send milestone notification if warranted
+ * Skips silently if DMs closed (milestone messages are personal)
  */
 async function notifyMilestoneIfNeeded(userId, newLevel) {
     if (!newLevel) return;
@@ -126,18 +127,18 @@ async function notifyMilestoneIfNeeded(userId, newLevel) {
         const user = await client.users.fetch(userId);
         if (!user) return;
 
-        const messages = {
+        const msgs = {
             familiar: "hey so... we've been talking a lot lately. i notice things. anyway.",
             close: "you know you're one of the people i actually look forward to seeing here right?",
             devoted: "so um. you've been here a lot. like, a lot a lot. i just wanted you to know i notice. and appreciate it.",
         };
 
-        const message = messages[newLevel];
+        const message = msgs[newLevel];
         if (message) {
             await user.send(message);
         }
-    } catch (error) {
-        console.error('✧ Milestone notification error:', error);
+    } catch {
+        // DMs closed - skip silently (milestone messages are personal)
     }
 }
 

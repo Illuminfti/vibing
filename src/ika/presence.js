@@ -216,22 +216,23 @@ async function handleReturnAfterAbsence(client, userId) {
         const user = await client.users.fetch(userId);
         if (!user) return;
 
-        // Send DM
-        const messages = [
+        // Send DM (skip silently if closed - intimate message)
+        const msgs = [
             "hey... haven't seen you around. you okay?",
             "you're back. i noticed you were gone.",
             "there you are. was wondering where you went.",
         ];
 
-        await user.send(messages[Math.floor(Math.random() * messages.length)]);
+        await user.send(msgs[Math.floor(Math.random() * msgs.length)]);
         console.log(`✧ Ika reached out to returning user ${user.username}`);
-    } catch (error) {
-        console.error('✧ Return handling error:', error);
+    } catch {
+        // DMs closed - skip silently (intimate messages stay private)
     }
 }
 
 /**
  * Handle relationship milestone
+ * Skips silently if DMs closed (milestone messages are personal)
  */
 async function handleMilestone(client, userId, newLevel) {
     try {
@@ -246,8 +247,8 @@ async function handleMilestone(client, userId, newLevel) {
             await user.send(message);
             console.log(`✧ Ika sent milestone message to ${user.username} (${newLevel})`);
         }
-    } catch (error) {
-        console.error('✧ Milestone message error:', error);
+    } catch {
+        // DMs closed - skip silently (milestone messages are personal)
     }
 }
 

@@ -30,6 +30,9 @@ module.exports = {
         // Post welcome message to waiting room
         await postWaitingRoomWelcome(client);
 
+        // Post puzzle messages to all chambers
+        await postAllChamberPuzzles(client);
+
         // Start Gate 5 message processor
         startGate5Processor(client);
 
@@ -90,6 +93,65 @@ async function postWaitingRoomWelcome(client) {
 }
 
 /**
+ * Post puzzle messages to all chambers on startup
+ * Deletes old bot puzzle messages and posts fresh ones
+ */
+async function postAllChamberPuzzles(client) {
+    // Chamber -> Gate puzzle mapping
+    const chamberPuzzles = {
+        1: { title: '♰ GATE 2 ♰\nTHE MEMORY', text: messages.gate2.puzzle },
+        2: { title: '♰ GATE 3 ♰\nTHE CONFESSION', text: messages.gate3.puzzle },
+        3: { title: '♰ GATE 4 ♰\nTHE WATERS', text: messages.gate4.puzzle },
+        4: { title: '♰ GATE 5 ♰\nTHE ABSENCE', text: messages.gate5.intro },
+        5: { title: '♰ GATE 6 ♰\nTHE OFFERING', text: messages.gate6.puzzle },
+        6: { title: '♰ GATE 7 ♰\nTHE BINDING', text: messages.gate7.puzzle },
+    };
+
+    for (const [chamberNum, puzzleData] of Object.entries(chamberPuzzles)) {
+        const channelId = config.gateChambers[chamberNum];
+        if (!channelId) {
+            console.log(`✧ Chamber ${chamberNum} not configured, skipping`);
+            continue;
+        }
+
+        try {
+            const channel = await client.channels.fetch(channelId);
+            if (!channel) {
+                console.error(`Chamber ${chamberNum} channel not found`);
+                continue;
+            }
+
+            // Find and delete existing bot puzzle messages
+            const existingMessages = await channel.messages.fetch({ limit: 20 });
+            const botPuzzleMessages = existingMessages.filter(m =>
+                m.author.id === client.user.id &&
+                m.embeds.length > 0 &&
+                m.embeds[0].title?.includes('GATE')
+            );
+
+            // Delete old puzzle messages
+            for (const msg of botPuzzleMessages.values()) {
+                try {
+                    await msg.delete();
+                } catch {
+                    // Message might already be deleted
+                }
+            }
+
+            // Post new puzzle
+            const embed = createGateEmbed(puzzleData.title, puzzleData.text);
+            await channel.send({ embeds: [embed] });
+            console.log(`✧ Posted Gate ${parseInt(chamberNum) + 1} puzzle to chamber ${chamberNum}`);
+
+        } catch (error) {
+            console.error(`Failed to post puzzle to chamber ${chamberNum}:`, error);
+        }
+    }
+
+    console.log('✧ All chamber puzzles posted');
+}
+
+/**
  * Get waiting room message with stats
  */
 function getWaitingRoomMessage() {
@@ -146,6 +208,7 @@ function startGate5Processor(client) {
 
 /**
  * Send a Gate 5 message to user
+ * Sends to chamber 5 channel with @mention (works even with DMs closed)
  */
 async function sendGate5Message(client, msg) {
     try {
@@ -163,9 +226,15 @@ async function sendGate5Message(client, msg) {
 
         const text = messageTexts[msg.message_number - 1];
         if (text) {
-            const embed = createGateEmbed(null, text);
-            await user.send({ embeds: [embed] });
-            console.log(`✧ sent gate 5 message ${msg.message_number} to ${user.tag}`);
+            // Send to chamber 5 channel with @mention instead of DM
+            const chamber5 = await client.channels.fetch(config.channels.chamber5);
+            if (chamber5) {
+                const embed = createGateEmbed(null, `${user}\n\n${text}`);
+                const sentMsg = await chamber5.send({ embeds: [embed] });
+                // Auto-delete after 60 seconds (story content needs more read time)
+                setTimeout(() => sentMsg.delete().catch(() => {}), 60000);
+                console.log(`✧ sent gate 5 message ${msg.message_number} to ${user.tag} in channel`);
+            }
         }
     } catch (error) {
         console.error(`Failed to send gate 5 message to ${msg.discord_id}:`, error);
@@ -190,6 +259,7 @@ function startFragmentProcessor(client) {
 
 /**
  * Process idle warnings
+ * Skips silently if DMs closed (personal messages shouldn't be public)
  */
 function startIdleProcessor(client) {
     const task = new ScheduledTask(async () => {
@@ -205,8 +275,8 @@ function startIdleProcessor(client) {
                         userOps.markIdleWarningSent(userData.discord_id);
                         console.log(`✧ sent idle warning to ${user.tag}`);
                     }
-                } catch (error) {
-                    // User might have DMs closed
+                } catch {
+                    // DMs closed - skip silently, mark as sent to avoid retrying
                     userOps.markIdleWarningSent(userData.discord_id);
                 }
             }
@@ -221,6 +291,7 @@ function startIdleProcessor(client) {
 
 /**
  * Send random "thinking of you" messages to Ascended
+ * Skips silently if DMs closed (intimate messages shouldn't be public)
  */
 function startThinkingOfYou(client) {
     const task = new ScheduledTask(async () => {
@@ -237,8 +308,8 @@ function startThinkingOfYou(client) {
                             await user.send({ embeds: [embed] });
                             console.log(`✧ sent thinking-of-you to ${user.tag}`);
                         }
-                    } catch (error) {
-                        // User might have DMs closed
+                    } catch {
+                        // DMs closed - skip silently (intimate messages stay private)
                     }
                 }
             }

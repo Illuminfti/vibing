@@ -207,22 +207,26 @@ async function approveVow(client, submitterId, approverId, messageId) {
         // Initialize Ika's memory of this user
         initializeIkaMemory(submitterId, member.user.username);
 
-        // Send success DM
+        // Send success message and announcement to inner sanctum (works with DMs closed)
         const dmText = maybeGlitch(messages.gate7.success);
         const imagePath = path.join(__dirname, '..', '..', 'images', 'gate7_reaching.png');
         const imageExists = fs.existsSync(imagePath);
 
-        if (imageExists) {
-            const { embed, attachment } = createGateEmbedWithImage(null, dmText, 'gate7_reaching.png');
-            await member.user.send({ embeds: [embed], files: [attachment] });
-        } else {
-            const embed = createGateEmbed(null, dmText);
-            await member.user.send({ embeds: [embed] });
-        }
-
-        // Announce in inner sanctum
         const sanctumChannel = await client.channels.fetch(config.channels.innerSanctum);
         if (sanctumChannel) {
+            // Combined personal message + announcement (auto-deletes personal part)
+            let personalMsg;
+            if (imageExists) {
+                const { embed, attachment } = createGateEmbedWithImage(null, `${member.user}\n\n${dmText}`, 'gate7_reaching.png');
+                personalMsg = await sanctumChannel.send({ embeds: [embed], files: [attachment] });
+            } else {
+                const embed = createGateEmbed(null, `${member.user}\n\n${dmText}`);
+                personalMsg = await sanctumChannel.send({ embeds: [embed] });
+            }
+            // Auto-delete personal message after 60 seconds
+            setTimeout(() => personalMsg.delete().catch(() => {}), 60000);
+
+            // Public announcement (stays permanent)
             const announceEmbed = createGateEmbed(
                 null,
                 `♡･ﾟ✧ **${member.user.username}** has ascended ✧･ﾟ♡\n\nwelcome them home.`

@@ -299,6 +299,7 @@ async function announcePublicly(client, user) {
 
 /**
  * Send fading DM to user
+ * Skips silently if DMs closed (fading is a personal mechanic)
  */
 async function sendFadingDm(client, userInfo) {
     try {
@@ -309,8 +310,8 @@ async function sendFadingDm(client, userInfo) {
         if (message) {
             await user.send(message);
         }
-    } catch (error) {
-        console.error(`Failed to DM fading user ${userInfo.user_id}:`, error.message);
+    } catch {
+        // DMs closed - skip silently (fading messages are personal)
     }
 }
 

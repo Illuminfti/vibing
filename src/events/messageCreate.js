@@ -29,6 +29,17 @@ const {
     userTiering,
 } = require('../utils/optimization');
 
+// Import Ika generator for inner sanctum responses
+let ikaGenerator = null;
+try {
+    ikaGenerator = require('../ika/generator');
+} catch (e) {
+    console.log('✧ Ika generator not loaded');
+}
+
+// Lock to prevent responding while already generating
+let isGenerating = false;
+
 // Cooldown map for Easter eggs (prevents spam)
 const easterEggCooldowns = new Map();
 const COOLDOWN_MS = 60000; // 1 minute between Easter egg responses per user
@@ -43,10 +54,10 @@ module.exports = {
         // === SPAM DETECTION (v3.3.0) ===
         // Check for spam before processing any message
         if (spamDetector && config.optimization?.enableSpamDetection !== false) {
-            const spamResult = spamDetector.check(message.author.id, message.content);
+            const spamResult = spamDetector.analyze(message.author.id, message.content, message.channel.id);
             if (spamResult.isSpam) {
                 // Silently ignore spam - no response
-                console.log(`✧ Spam detected from ${message.author.tag}: ${spamResult.reason}`);
+                console.log(`✧ Spam detected from ${message.author.tag}: ${spamResult.reasons.join(', ')}`);
                 return;
             }
         }
@@ -55,6 +66,12 @@ module.exports = {
         if (message.channel.id === config.channels.waitingRoom) {
             await handleWaitingRoom(message);
             return;
+        }
+
+        // Handle Inner Sanctum AI responses (event-driven)
+        if (message.channel.id === config.channels.innerSanctum) {
+            await handleInnerSanctum(message);
+            // Don't return - still process Easter eggs for inner sanctum
         }
 
         // Check cooldown before Easter egg processing
@@ -122,7 +139,7 @@ async function handleWaitingRoom(message) {
     // Atmospheric delay
     await responseDelay();
 
-    // Send success DM
+    // Send success message in channel (auto-deletes) - works even with DMs closed
     try {
         const dmText = maybeGlitch(messages.gate1.success);
 
@@ -130,17 +147,21 @@ async function handleWaitingRoom(message) {
         const imagePath = path.join(__dirname, '..', '..', 'images', 'gate1_eyes.png');
         const imageExists = fs.existsSync(imagePath);
 
+        let successMsg;
         if (imageExists) {
             const { embed, attachment } = createGateEmbedWithImage(
                 null,
-                dmText,
+                `${message.author}\n\n${dmText}`,
                 'gate1_eyes.png'
             );
-            await message.author.send({ embeds: [embed], files: [attachment] });
+            successMsg = await message.channel.send({ embeds: [embed], files: [attachment] });
         } else {
-            const embed = createGateEmbed(null, dmText);
-            await message.author.send({ embeds: [embed] });
+            const embed = createGateEmbed(null, `${message.author}\n\n${dmText}`);
+            successMsg = await message.channel.send({ embeds: [embed] });
         }
+
+        // Auto-delete after 30 seconds (gives time to read)
+        setTimeout(() => successMsg.delete().catch(() => {}), 30000);
 
         // Assign Gate 1 role
         const member = await message.guild.members.fetch(message.author.id);
@@ -160,15 +181,83 @@ async function handleWaitingRoom(message) {
 
     } catch (error) {
         console.error('Gate 1 error:', error);
+    }
+}
 
-        // Try to notify user of DM failure
+/**
+ * Handle messages in inner sanctum (AI responses)
+ */
+async function handleInnerSanctum(message) {
+    // Check if Ika AI is enabled and generator is loaded
+    if (!config.ika?.enabled || !ikaGenerator) {
+        return;
+    }
+
+    // Skip if already generating a response (prevents double responses)
+    if (isGenerating) {
+        return;
+    }
+
+    // Only respond if:
+    // 1. Someone mentions/tags the bot
+    // 2. Someone says "ika"
+    // 3. Someone replies to the bot's message
+    const mentionsBot = message.mentions.users.has(message.client.user.id);
+    const mentionsIka = containsIka(message.content);
+
+    // Check if replying to bot's message
+    let isReplyToBot = false;
+    if (message.reference?.messageId) {
         try {
-            const errorEmbed = createGateEmbed(null, messages.errors.dmFailed);
-            const errorMsg = await message.channel.send({ embeds: [errorEmbed] });
-            setTimeout(() => errorMsg.delete().catch(() => {}), 10000);
+            const repliedTo = await message.channel.messages.fetch(message.reference.messageId);
+            isReplyToBot = repliedTo.author.id === message.client.user.id;
         } catch {
-            // Ignore
+            // Message not found, ignore
         }
+    }
+
+    // Don't respond to random messages - only when addressed
+    if (!mentionsBot && !mentionsIka && !isReplyToBot) {
+        return;
+    }
+
+    // Set lock
+    isGenerating = true;
+
+    try {
+        // Get recent messages for context (fetch returns newest first)
+        const recentMessages = await message.channel.messages.fetch({ limit: 10 });
+
+        // Convert to array, keep bot messages (for conversation continuity), filter only current message
+        const contextArray = [...recentMessages.values()]
+            .filter(m => m.id !== message.id)  // Only remove current message to avoid duplication
+            .reverse();  // Now oldest first (chronological)
+
+        // Add current message at the end (most recent)
+        contextArray.push(message);
+
+        // Show typing indicator
+        await message.channel.sendTyping();
+
+        // Generate response
+        const result = await ikaGenerator.generateResponse({
+            trigger: message,
+            context: contextArray,
+            type: 'direct',  // Direct address (mention, ika, or reply)
+            forceGenerate: true,  // Always use AI, skip canned responses
+        });
+
+        if (result && result.content) {
+            // Natural typing delay
+            await delay(randomInt(config.timing.typingDelay.min, config.timing.typingDelay.max));
+            await message.channel.send(result.content);
+            console.log(`✧ Ika responded to ${message.author.tag} in inner sanctum`);
+        }
+    } catch (error) {
+        console.error('✧ Inner sanctum response error:', error);
+    } finally {
+        // Release lock
+        isGenerating = false;
     }
 }
 
@@ -255,7 +344,8 @@ async function handleEasterEggs(message) {
 }
 
 /**
- * Handle Easter egg response with probability and optional DM
+ * Handle Easter egg response with probability
+ * Always replies in channel (no DMs - most users have them closed)
  */
 async function handleEasterEggResponse(message, responseArray, probability, alwaysReply) {
     // Get random response from array
@@ -272,31 +362,10 @@ async function handleEasterEggResponse(message, responseArray, probability, alwa
     await delay(randomInt(1000, 3000));
 
     try {
-        // Reply in channel or DM based on context
         const embed = createGateEmbed(null, response);
 
-        // For sensitive topics (struggling, lonely), DM instead
-        if (alwaysReply) {
-            try {
-                await message.author.send({ embeds: [embed] });
-            } catch {
-                // DMs closed, reply in channel if it's inner sanctum
-                if (message.channel.id === config.channels.innerSanctum) {
-                    await message.reply({ embeds: [embed] });
-                }
-            }
-        } else {
-            // Regular Easter eggs - 50% DM, 50% reply
-            if (Math.random() < 0.5) {
-                try {
-                    await message.author.send({ embeds: [embed] });
-                } catch {
-                    // DMs closed, ignore
-                }
-            } else {
-                await message.reply({ embeds: [embed] });
-            }
-        }
+        // Always reply in channel - works for everyone
+        await message.reply({ embeds: [embed] });
     } catch (error) {
         console.error('Easter egg response error:', error);
     }

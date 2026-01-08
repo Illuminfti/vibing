@@ -90,6 +90,7 @@ async function processPendingFragments(client) {
 
 /**
  * Send a fragment DM
+ * Skips silently if DMs closed (fragments are bonus lore, not critical)
  */
 async function sendFragment(client, fragment) {
     try {
@@ -103,8 +104,8 @@ async function sendFragment(client, fragment) {
         await user.send({ embeds: [embed] });
 
         console.log(`✧ Sent fragment to ${user.tag} for gate ${fragment.gate_number}`);
-    } catch (error) {
-        console.error(`✧ Failed to send fragment to ${fragment.discord_id}:`, error);
+    } catch {
+        // DMs closed - skip silently (fragments are bonus content)
     }
 }
 
