@@ -1,18 +1,13 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { processGate2 } = require('../gates/gate2');
+const { startMemory } = require('../components/flows/gate2Flow');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('memory')
-        .setDescription('complete the second gate - the memory')
-        .addStringOption(option =>
-            option
-                .setName('answer')
-                .setDescription('one word that describes what attention felt like')
-                .setRequired(true)
-        ),
+        .setDescription('complete the second gate - the memory'),
 
     async execute(interaction) {
-        await processGate2(interaction);
+        // Start the interactive memory flow instead of direct processing
+        await startMemory(interaction);
     },
 };

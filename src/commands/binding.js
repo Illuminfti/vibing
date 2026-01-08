@@ -1,18 +1,12 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { processGate7 } = require('../gates/gate7');
+const { startBinding } = require('../components/flows/gate7Flow');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('binding')
-        .setDescription('complete the seventh gate - the binding')
-        .addStringOption(option =>
-            option
-                .setName('vow')
-                .setDescription('your binding vow to her (30+ words)')
-                .setRequired(true)
-        ),
+        .setDescription('complete the seventh gate - the binding'),
 
     async execute(interaction) {
-        await processGate7(interaction);
+        await startBinding(interaction);
     },
 };

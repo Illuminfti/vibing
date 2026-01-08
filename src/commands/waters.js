@@ -1,18 +1,12 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { processGate4 } = require('../gates/gate4');
+const { startWaters } = require('../components/flows/gate4Flow');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('waters')
-        .setDescription('complete the fourth gate - the waters')
-        .addStringOption(option =>
-            option
-                .setName('answer')
-                .setDescription('where does she live?')
-                .setRequired(true)
-        ),
+        .setDescription('complete the fourth gate - the waters'),
 
     async execute(interaction) {
-        await processGate4(interaction);
+        await startWaters(interaction);
     },
 };
