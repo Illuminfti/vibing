@@ -1,11 +1,33 @@
-const { Events, InteractionType } = require('discord.js');
+/**
+ * Interaction Create Event Handler
+ *
+ * Routes all Discord interactions to appropriate handlers.
+ * Supports: slash commands, buttons, modals, and select menus.
+ */
+
+const { Events } = require('discord.js');
 const { RitualEmbedBuilder } = require('../ui');
 const messages = require('../assets/messages');
+const {
+    handleButton,
+    handleModal,
+    handleSelect,
+    initializeAllHandlers,
+} = require('../components/handlers');
+
+// Initialize component handlers on first load
+let handlersInitialized = false;
 
 module.exports = {
     name: Events.InteractionCreate,
 
     async execute(interaction) {
+        // Initialize handlers on first interaction
+        if (!handlersInitialized) {
+            initializeAllHandlers();
+            handlersInitialized = true;
+        }
+
         // Handle slash commands
         if (interaction.isChatInputCommand()) {
             await handleSlashCommand(interaction);
@@ -14,13 +36,19 @@ module.exports = {
 
         // Handle button interactions
         if (interaction.isButton()) {
-            await handleButton(interaction);
+            await handleButtonInteraction(interaction);
+            return;
+        }
+
+        // Handle modal submissions
+        if (interaction.isModalSubmit()) {
+            await handleModalInteraction(interaction);
             return;
         }
 
         // Handle select menu interactions
         if (interaction.isStringSelectMenu()) {
-            await handleSelectMenu(interaction);
+            await handleSelectInteraction(interaction);
             return;
         }
     },
@@ -44,7 +72,7 @@ async function handleSlashCommand(interaction) {
 
         // Use the failure theme for error messages
         const errorEmbed = new RitualEmbedBuilder('failure', { mood: 'normal' })
-            .setRitualDescription(messages.errors.generic, false)
+            .setRitualDescription(messages.errors?.generic || 'something went wrong...', false)
             .build();
 
         if (interaction.replied || interaction.deferred) {
@@ -58,47 +86,59 @@ async function handleSlashCommand(interaction) {
 /**
  * Handle button interactions
  */
-async function handleButton(interaction) {
-    const customId = interaction.customId;
-
-    // Admin panel buttons
-    if (customId.startsWith('admin_')) {
-        try {
-            const adminPanel = require('../commands/adminPanel');
-            await adminPanel.handleComponent(interaction);
-        } catch (error) {
-            console.error('Error handling admin panel button:', error);
-            if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({ content: '❌ Error processing action', ephemeral: true });
-            }
+async function handleButtonInteraction(interaction) {
+    try {
+        const handled = await handleButton(interaction);
+        if (!handled) {
+            console.log(`Unhandled button: ${interaction.customId}`);
         }
-        return;
+    } catch (error) {
+        console.error('Error handling button:', error);
+        if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({
+                content: '*something went wrong...*',
+                ephemeral: true,
+            });
+        }
     }
+}
 
-    // Other button handlers can be added here
-    console.log(`Unhandled button interaction: ${customId}`);
+/**
+ * Handle modal submissions
+ */
+async function handleModalInteraction(interaction) {
+    try {
+        const handled = await handleModal(interaction);
+        if (!handled) {
+            console.log(`Unhandled modal: ${interaction.customId}`);
+        }
+    } catch (error) {
+        console.error('Error handling modal:', error);
+        if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({
+                content: '*something went wrong...*',
+                ephemeral: true,
+            });
+        }
+    }
 }
 
 /**
  * Handle select menu interactions
  */
-async function handleSelectMenu(interaction) {
-    const customId = interaction.customId;
-
-    // Admin panel select menus
-    if (customId.startsWith('admin_')) {
-        try {
-            const adminPanel = require('../commands/adminPanel');
-            await adminPanel.handleComponent(interaction);
-        } catch (error) {
-            console.error('Error handling admin panel select:', error);
-            if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({ content: '❌ Error processing selection', ephemeral: true });
-            }
+async function handleSelectInteraction(interaction) {
+    try {
+        const handled = await handleSelect(interaction);
+        if (!handled) {
+            console.log(`Unhandled select: ${interaction.customId}`);
         }
-        return;
+    } catch (error) {
+        console.error('Error handling select:', error);
+        if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({
+                content: '*something went wrong...*',
+                ephemeral: true,
+            });
+        }
     }
-
-    // Other select menu handlers can be added here
-    console.log(`Unhandled select menu interaction: ${customId}`);
 }
