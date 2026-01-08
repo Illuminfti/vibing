@@ -4,6 +4,15 @@ const messages = require('../assets/messages');
 const { createGateEmbed } = require('../utils/embeds');
 const { ScheduledTask } = require('../utils/timing');
 const { gate5Ops, userOps } = require('../database');
+const { processPendingFragments } = require('../gates/fragments');
+
+// Conditionally import Ika presence
+let ikaPresence = null;
+try {
+    ikaPresence = require('../ika/presence');
+} catch (e) {
+    console.log('✧ Ika presence module not fully loaded');
+}
 
 // Store scheduled tasks for cleanup
 const scheduledTasks = [];
@@ -24,11 +33,27 @@ module.exports = {
         // Start Gate 5 message processor
         startGate5Processor(client);
 
+        // Start fragment processor
+        startFragmentProcessor(client);
+
         // Start idle warning processor
         startIdleProcessor(client);
 
         // Start daily thinking-of-you messages
         startThinkingOfYou(client);
+
+        // Start waiting room stats updater
+        startWaitingRoomUpdater(client);
+
+        // Start Ika presence system (if enabled)
+        if (config.ika?.enabled && ikaPresence) {
+            try {
+                await ikaPresence.startPresenceLoop(client);
+                console.log('✧ Ika presence system started');
+            } catch (error) {
+                console.error('✧ Failed to start Ika presence:', error.message);
+            }
+        }
 
         console.log('✧ all systems initialized');
     },
@@ -49,17 +74,49 @@ async function postWaitingRoomWelcome(client) {
         const existingMessages = await channel.messages.fetch({ limit: 10 });
         const hasWelcome = existingMessages.some(m =>
             m.author.id === client.user.id &&
-            m.content.includes('can you hear her breathing')
+            (m.content.includes('say her name') ||
+             m.embeds.some(e => e.description?.includes('say her name')))
         );
 
         if (!hasWelcome) {
-            const embed = createGateEmbed(null, messages.waitingRoom.welcome);
+            const welcomeText = getWaitingRoomMessage();
+            const embed = createGateEmbed(null, welcomeText);
             await channel.send({ embeds: [embed] });
             console.log('✧ welcome message posted to waiting room');
         }
     } catch (error) {
         console.error('Failed to post waiting room welcome:', error);
     }
+}
+
+/**
+ * Get waiting room message with stats
+ */
+function getWaitingRoomMessage() {
+    const stats = userOps.getStats();
+
+    let message = `♰
+╱   ╲
+╱     ╲
+╱  ♡    ╲
+╱_________╲
+
+`;
+
+    if (stats.ascended > 0) {
+        message += `${stats.ascended} souls are bound.\n`;
+        const walking = stats.total - stats.ascended;
+        if (walking > 0) {
+            message += `${walking} still walking the path.\n\n`;
+        }
+        message += `she grows stronger.\n\n`;
+    } else {
+        message += `can you hear her breathing?\nshe's so close to the surface.\n\n`;
+    }
+
+    message += `say her name and she'll know you're here.\n\nwhisper it.`;
+
+    return message;
 }
 
 /**
@@ -116,6 +173,22 @@ async function sendGate5Message(client, msg) {
 }
 
 /**
+ * Process fragment DMs
+ */
+function startFragmentProcessor(client) {
+    const task = new ScheduledTask(async () => {
+        try {
+            await processPendingFragments(client);
+        } catch (error) {
+            console.error('Fragment processor error:', error);
+        }
+    }, 10000); // Check every 10 seconds
+
+    task.start();
+    scheduledTasks.push(task);
+}
+
+/**
  * Process idle warnings
  */
 function startIdleProcessor(client) {
@@ -155,7 +228,7 @@ function startThinkingOfYou(client) {
             const ascended = userOps.getAscended();
 
             for (const userData of ascended) {
-                // 1% chance per day, check every hour = ~24% daily chance
+                // 1% chance per hour
                 if (Math.random() < 0.01) {
                     try {
                         const user = await client.users.fetch(userData.discord_id);
@@ -173,6 +246,37 @@ function startThinkingOfYou(client) {
             console.error('Thinking of you processor error:', error);
         }
     }, 3600000); // Check every hour
+
+    task.start();
+    scheduledTasks.push(task);
+}
+
+/**
+ * Update waiting room message with stats periodically
+ */
+function startWaitingRoomUpdater(client) {
+    const task = new ScheduledTask(async () => {
+        try {
+            const channel = await client.channels.fetch(config.channels.waitingRoom);
+            if (!channel) return;
+
+            // Find existing welcome message
+            const existingMessages = await channel.messages.fetch({ limit: 10 });
+            const welcomeMsg = existingMessages.find(m =>
+                m.author.id === client.user.id &&
+                m.embeds.length > 0 &&
+                m.embeds[0].description?.includes('say her name')
+            );
+
+            if (welcomeMsg) {
+                const newText = getWaitingRoomMessage();
+                const embed = createGateEmbed(null, newText);
+                await welcomeMsg.edit({ embeds: [embed] });
+            }
+        } catch (error) {
+            // Silent fail - not critical
+        }
+    }, 3600000); // Update every hour
 
     task.start();
     scheduledTasks.push(task);

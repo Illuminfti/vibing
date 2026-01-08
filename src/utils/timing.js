@@ -117,6 +117,22 @@ async function withRetry(callback, maxRetries = 3, delayMs = 1000) {
     throw lastError;
 }
 
+/**
+ * Generate random integer in range [min, max]
+ */
+function randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/**
+ * Random delay within a range
+ */
+async function randomDelay(min, max) {
+    const ms = randomInt(min, max);
+    await delay(ms);
+    return ms;
+}
+
 module.exports = {
     delay,
     responseDelay,
@@ -125,4 +141,6 @@ module.exports = {
     timeAgo,
     ScheduledTask,
     withRetry,
+    randomInt,
+    randomDelay,
 };

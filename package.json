@@ -1,7 +1,7 @@
 {
   "name": "seven-gates-bot",
-  "version": "1.0.0",
-  "description": "A mystical puzzle Discord bot - The Seven Gates ritual",
+  "version": "2.0.0",
+  "description": "A mystical puzzle Discord bot - The Seven Gates ritual with living AI presence",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
@@ -12,11 +12,13 @@
     "discord",
     "bot",
     "puzzle",
-    "ritual"
+    "ritual",
+    "ai"
   ],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.17.1",
     "better-sqlite3": "^9.4.3",
     "discord.js": "^14.14.1",
     "dotenv": "^16.4.1"

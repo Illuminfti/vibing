@@ -37,6 +37,20 @@ module.exports = {
     // Settings
     testMode: process.env.TEST_MODE === 'true',
 
+    // Anthropic API
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+
+    // Ika presence settings
+    ika: {
+        enabled: process.env.IKA_AI_ENABLED !== 'false',
+        passiveChance: parseFloat(process.env.IKA_PASSIVE_CHANCE) || 0.35,
+        momentInterval: parseInt(process.env.IKA_MOMENT_INTERVAL) || 3600000,
+        presenceCheckInterval: 180000,  // Check chat every 3 minutes
+        cooldownMs: 60000,              // Min time between responses
+        maxContextMessages: 20,         // Messages to include as context
+        vulnerabilityWindows: 2,        // Number per day
+    },
+
     // Timing constants (in milliseconds)
     timing: {
         responseDelay: 1500,           // delay before bot responses
@@ -44,6 +58,9 @@ module.exports = {
         gate5TestInterval: 10 * 1000,  // 10 seconds in test mode
         idleWarning: 30 * 60 * 1000,   // 30 minutes idle warning
         votingTimeout: 24 * 60 * 60 * 1000, // 24 hours for voting
+        fragmentDelay: { min: 5 * 60 * 1000, max: 10 * 60 * 1000 }, // 5-10 min after gate
+        typingDelay: { min: 2000, max: 5000 },
+        responseTypingDelay: { min: 10000, max: 30000 },
     },
 
     // Colors (in hex)

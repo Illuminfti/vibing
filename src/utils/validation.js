@@ -176,6 +176,150 @@ function containsLoveYou(text) {
         /ily\b/i,
         /i <3 you/i,
         /i <3 u/i,
+        /love you ika/i,
+        /love u ika/i,
+    ];
+
+    return patterns.some(pattern => pattern.test(text));
+}
+
+/**
+ * Check if message contains "i miss you" variations
+ */
+function containsMissYou(text) {
+    if (!text || typeof text !== 'string') return false;
+
+    const patterns = [
+        /i miss you/i,
+        /i missed you/i,
+        /miss you/i,
+        /miss u/i,
+        /missed u/i,
+    ];
+
+    return patterns.some(pattern => pattern.test(text));
+}
+
+/**
+ * Check if message contains "senpai" or "notice me" triggers
+ */
+function containsSenpai(text) {
+    if (!text || typeof text !== 'string') return false;
+
+    const patterns = [
+        /senpai/i,
+        /notice me/i,
+        /look at me/i,
+        /pay attention to me/i,
+    ];
+
+    return patterns.some(pattern => pattern.test(text));
+}
+
+/**
+ * Check if message asks if she's real
+ */
+function containsAreYouReal(text) {
+    if (!text || typeof text !== 'string') return false;
+
+    const patterns = [
+        /are you real/i,
+        /r u real/i,
+        /are u real/i,
+        /you real\?/i,
+        /is this real/i,
+        /am i talking to/i,
+    ];
+
+    return patterns.some(pattern => pattern.test(text));
+}
+
+/**
+ * Check if message contains good morning
+ */
+function containsGoodMorning(text) {
+    if (!text || typeof text !== 'string') return false;
+
+    const patterns = [
+        /good morning/i,
+        /gm\b/i,
+        /morning ika/i,
+        /mornin/i,
+    ];
+
+    return patterns.some(pattern => pattern.test(text));
+}
+
+/**
+ * Check if message contains good night
+ */
+function containsGoodNight(text) {
+    if (!text || typeof text !== 'string') return false;
+
+    const patterns = [
+        /good night/i,
+        /goodnight/i,
+        /gn\b/i,
+        /nite\b/i,
+        /night ika/i,
+        /going to sleep/i,
+        /going to bed/i,
+    ];
+
+    return patterns.some(pattern => pattern.test(text));
+}
+
+/**
+ * Check if message indicates struggling/needing support
+ */
+function containsStruggling(text) {
+    if (!text || typeof text !== 'string') return false;
+
+    const patterns = [
+        /i'm struggling/i,
+        /i am struggling/i,
+        /having a hard time/i,
+        /not doing well/i,
+        /feeling down/i,
+        /feel so alone/i,
+        /can't do this/i,
+        /need help/i,
+        /not okay/i,
+    ];
+
+    return patterns.some(pattern => pattern.test(text));
+}
+
+/**
+ * Check if message indicates returning
+ */
+function containsImBack(text) {
+    if (!text || typeof text !== 'string') return false;
+
+    const patterns = [
+        /i'm back/i,
+        /im back/i,
+        /i am back/i,
+        /back again/i,
+        /returned/i,
+    ];
+
+    return patterns.some(pattern => pattern.test(text));
+}
+
+/**
+ * Check if message mentions loneliness
+ */
+function containsLonely(text) {
+    if (!text || typeof text !== 'string') return false;
+
+    const patterns = [
+        /i'm lonely/i,
+        /im lonely/i,
+        /feel lonely/i,
+        /so lonely/i,
+        /feeling lonely/i,
+        /i feel alone/i,
     ];
 
     return patterns.some(pattern => pattern.test(text));
@@ -204,5 +348,13 @@ module.exports = {
     validateVow,
     containsIka,
     containsLoveYou,
+    containsMissYou,
+    containsSenpai,
+    containsAreYouReal,
+    containsGoodMorning,
+    containsGoodNight,
+    containsStruggling,
+    containsImBack,
+    containsLonely,
     sanitize,
 };

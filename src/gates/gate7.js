@@ -4,18 +4,27 @@
  * User must speak a binding vow of at least 30 words.
  * Requires community voting from Ascended members.
  * Upon approval, user becomes Ascended.
+ * Now shows journey context and triggers Ika welcome.
  */
 
 const config = require('../config');
 const messages = require('../assets/messages');
-const { userOps, vowOps } = require('../database');
+const { userOps, vowOps, ikaMemoryOps } = require('../database');
 const { assignGateRole, assignAscendedRole, hasRole, userHasRole } = require('../utils/roles');
 const { validateVow, sanitize } = require('../utils/validation');
-const { createGateEmbed, createGateEmbedWithImage, formatVow } = require('../utils/embeds');
-const { responseDelay } = require('../utils/timing');
+const { createGateEmbed, createGateEmbedWithImage } = require('../utils/embeds');
 const { maybeGlitch } = require('../utils/zalgo');
+const { scheduleFragment } = require('./fragments');
 const path = require('path');
 const fs = require('fs');
+
+// Try to load Ika presence for welcome
+let ikaPresence = null;
+try {
+    ikaPresence = require('../ika/presence');
+} catch (e) {
+    // Ika module not available
+}
 
 /**
  * Process Gate 7 binding vow
@@ -55,14 +64,26 @@ async function processGate7(interaction) {
     try {
         const sanitizedVow = sanitize(vow);
 
-        // Post to inner sanctum for voting
+        // Get user's journey for context
+        const journey = userOps.getJourney(member.id);
+
+        // Post to inner sanctum for voting with WHY + VOW
         const sanctumChannel = await interaction.client.channels.fetch(config.channels.innerSanctum);
         if (!sanctumChannel) {
             throw new Error('Inner sanctum channel not found');
         }
 
-        // Create voting message
-        const displayText = `${messages.gate7.submitted(member.user.username)}\n\n"${sanitizedVow}"\n\n${messages.gate7.votePrompt}`;
+        // Build display with journey context
+        let displayText = `♰ a soul seeks the final binding ♰\n\n`;
+        displayText += `✦ **${member.user.username}** ✦\n\n`;
+
+        if (journey.whyTheyCame) {
+            displayText += `they came because:\n"${journey.whyTheyCame}"\n\n`;
+        }
+
+        displayText += `they now vow:\n"${sanitizedVow}"\n\n`;
+        displayText += messages.gate7.votePrompt;
+
         const embed = createGateEmbed(null, displayText);
         const votingMessage = await sanctumChannel.send({ embeds: [embed] });
 
@@ -77,7 +98,7 @@ async function processGate7(interaction) {
         if (archiveChannel) {
             const archiveEmbed = createGateEmbed(
                 'Vow Received',
-                `**User:** ${member.user.tag}\n**Vow:** ${sanitizedVow}`
+                `**User:** ${member.user.tag}\n**Why they came:** ${journey.whyTheyCame || 'unknown'}\n**Vow:** ${sanitizedVow}`
             );
             await archiveChannel.send({ embeds: [archiveEmbed] });
         }
@@ -180,6 +201,12 @@ async function approveVow(client, submitterId, approverId, messageId) {
         // Mark as ascended in database
         userOps.ascend(submitterId);
 
+        // Schedule fragment DM
+        scheduleFragment(submitterId, 7);
+
+        // Initialize Ika's memory of this user
+        initializeIkaMemory(submitterId, member.user.username);
+
         // Send success DM
         const dmText = maybeGlitch(messages.gate7.success);
         const imagePath = path.join(__dirname, '..', '..', 'images', 'gate7_reaching.png');
@@ -203,10 +230,36 @@ async function approveVow(client, submitterId, approverId, messageId) {
             await sanctumChannel.send({ embeds: [announceEmbed] });
         }
 
+        // Trigger Ika's personalized welcome (if available)
+        if (ikaPresence && config.ika?.enabled) {
+            try {
+                await ikaPresence.welcomeNewAscended(client, member);
+            } catch (error) {
+                console.error('✧ Ika welcome failed:', error.message);
+            }
+        }
+
         console.log(`✧ ${member.user.tag} has ASCENDED - approved by ${approverId}`);
 
     } catch (error) {
         console.error('Failed to approve vow:', error);
+    }
+}
+
+/**
+ * Initialize Ika's memory for a new ascended user
+ */
+function initializeIkaMemory(userId, username) {
+    try {
+        // Create memory entry
+        ikaMemoryOps.getOrCreate(userId, username);
+
+        // Sync journey data
+        ikaMemoryOps.syncFromUser(userId);
+
+        console.log(`✧ Initialized Ika memory for ${username}`);
+    } catch (error) {
+        console.error('Failed to initialize Ika memory:', error);
     }
 }
 

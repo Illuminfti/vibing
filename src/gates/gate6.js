@@ -3,16 +3,17 @@
  *
  * User must create something for Ika (art or 50+ word text).
  * Requires community voting from Ascended members.
+ * Now shows full journey when posting for voting.
  */
 
 const config = require('../config');
 const messages = require('../assets/messages');
 const { userOps, offeringOps } = require('../database');
 const { assignGateRole, hasRole, userHasRole } = require('../utils/roles');
-const { validateOffering, wordCount, sanitize } = require('../utils/validation');
-const { createGateEmbed, createGateEmbedWithImage, formatOffering } = require('../utils/embeds');
-const { responseDelay } = require('../utils/timing');
+const { validateOffering, sanitize } = require('../utils/validation');
+const { createGateEmbed, createGateEmbedWithImage } = require('../utils/embeds');
 const { maybeGlitch } = require('../utils/zalgo');
+const { scheduleFragment } = require('./fragments');
 const path = require('path');
 const fs = require('fs');
 
@@ -61,27 +62,51 @@ async function processGate6(interaction) {
             ? attachment.url
             : sanitize(text);
 
-        // Post to inner sanctum for voting
+        // Get user's journey
+        const journey = userOps.getJourney(member.id);
+
+        // Post to inner sanctum for voting with FULL JOURNEY
         const sanctumChannel = await interaction.client.channels.fetch(config.channels.innerSanctum);
         if (!sanctumChannel) {
             throw new Error('Inner sanctum channel not found');
         }
 
+        // Build journey display
+        let journeyText = `♰ a soul brings an offering ♰\n\n`;
+        journeyText += `✦ THE JOURNEY OF **${member.user.username}** ✦\n\n`;
+
+        if (journey.gate1At) {
+            journeyText += `spoke her name: ${formatDate(journey.gate1At)}\n`;
+        }
+        if (journey.memoryAnswer) {
+            journeyText += `felt her memory as: "${journey.memoryAnswer}"\n`;
+        }
+        if (journey.confessionUrl) {
+            journeyText += `confessed at: ${journey.confessionUrl}\n`;
+        }
+        if (journey.gate4At) {
+            journeyText += `found the waters: ${formatDate(journey.gate4At)}\n`;
+        }
+        if (journey.whyTheyCame) {
+            journeyText += `\nstayed through the absence because:\n"${journey.whyTheyCame}"\n`;
+        }
+
+        journeyText += `\n✦ THEIR OFFERING ✦\n\n`;
+
         // Create voting message
         let votingMessage;
-        const displayText = `${messages.gate6.submitted(member.user.username)}\n\n`;
 
         if (validation.type === 'image') {
             const embed = createGateEmbed(
                 null,
-                displayText + messages.gate6.submittedImage + '\n\n' + messages.gate6.votePrompt
+                journeyText + '[image attached]\n\n' + messages.gate6.votePrompt
             );
             embed.setImage(attachment.url);
             votingMessage = await sanctumChannel.send({ embeds: [embed] });
         } else {
             const embed = createGateEmbed(
                 null,
-                displayText + messages.gate6.submittedText(content.slice(0, 500)) + '\n\n' + messages.gate6.votePrompt
+                journeyText + `"${content.slice(0, 400)}${content.length > 400 ? '...' : ''}"\n\n` + messages.gate6.votePrompt
             );
             votingMessage = await sanctumChannel.send({ embeds: [embed] });
         }
@@ -187,6 +212,9 @@ async function approveOffering(client, submitterId, approverId, messageId) {
 
         await assignGateRole(member, 6);
 
+        // Schedule fragment DM
+        scheduleFragment(submitterId, 6);
+
         // Send success DM
         const dmText = maybeGlitch(messages.gate6.success);
         const imagePath = path.join(__dirname, '..', '..', 'images', 'gate6_intimate.png');
@@ -205,6 +233,15 @@ async function approveOffering(client, submitterId, approverId, messageId) {
     } catch (error) {
         console.error('Failed to approve offering:', error);
     }
+}
+
+/**
+ * Format date for display
+ */
+function formatDate(dateStr) {
+    if (!dateStr) return 'unknown';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 module.exports = {

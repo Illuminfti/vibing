@@ -90,6 +90,69 @@ db.exec(`
         sent INTEGER DEFAULT 0,
         sent_at DATETIME
     );
+
+    -- Fragment DMs scheduled after gate completions
+    CREATE TABLE IF NOT EXISTS fragments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        discord_id TEXT,
+        gate_number INTEGER,
+        scheduled_for DATETIME,
+        sent INTEGER DEFAULT 0,
+        sent_at DATETIME
+    );
+
+    -- Ika's memory of each person
+    CREATE TABLE IF NOT EXISTS ika_memory (
+        user_id TEXT PRIMARY KEY,
+        username TEXT,
+
+        -- Key journey info (cached from users table)
+        why_they_came TEXT,
+        their_vow TEXT,
+        their_memory_answer TEXT,
+
+        -- Relationship tracking
+        interaction_count INTEGER DEFAULT 0,
+        last_interaction DATETIME,
+        relationship_level TEXT DEFAULT 'new',
+
+        -- Remembered details (JSON arrays)
+        remembered_facts TEXT DEFAULT '[]',
+        inside_jokes TEXT DEFAULT '[]',
+        nickname TEXT,
+
+        -- Sentiment
+        last_mood_with_them TEXT,
+        notable_moments TEXT DEFAULT '[]'
+    );
+
+    -- All of Ika's messages (for context/learning)
+    CREATE TABLE IF NOT EXISTS ika_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        channel_id TEXT,
+        trigger_user_id TEXT,
+        trigger_content TEXT,
+        response TEXT,
+        response_type TEXT,
+        mood TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Initiated moments log
+    CREATE TABLE IF NOT EXISTS ika_moments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        moment_type TEXT,
+        content TEXT,
+        responses_count INTEGER DEFAULT 0,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Ika's current state
+    CREATE TABLE IF NOT EXISTS ika_state (
+        key TEXT PRIMARY KEY,
+        value TEXT,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
 `);
 
 // User operations
@@ -173,6 +236,8 @@ const userOps = {
     reset(discordId) {
         db.prepare('DELETE FROM users WHERE discord_id = ?').run(discordId);
         db.prepare('DELETE FROM gate5_schedule WHERE discord_id = ?').run(discordId);
+        db.prepare('DELETE FROM fragments WHERE discord_id = ?').run(discordId);
+        db.prepare('DELETE FROM ika_memory WHERE user_id = ?').run(discordId);
     },
 
     // Update activity
@@ -203,6 +268,27 @@ const userOps = {
         return db.prepare('SELECT * FROM users WHERE ascended_at IS NOT NULL').all();
     },
 
+    // Get user's full journey for display
+    getJourney(discordId) {
+        const user = this.get(discordId);
+        if (!user) return null;
+
+        return {
+            username: user.username,
+            joinedAt: user.joined_at,
+            gate1At: user.gate_1_at,
+            memoryAnswer: user.gate_2_answer,
+            confessionUrl: user.gate_3_url,
+            gate4At: user.gate_4_at,
+            whyTheyCame: user.gate_5_reason,
+            offeringType: user.gate_6_type,
+            offeringContent: user.gate_6_content,
+            theirVow: user.gate_7_vow,
+            ascendedAt: user.ascended_at,
+            totalTime: user.total_time_seconds,
+        };
+    },
+
     // Get stats
     getStats() {
         const stats = {};
@@ -223,6 +309,16 @@ const userOps = {
     getAverageTime() {
         const result = db.prepare('SELECT AVG(total_time_seconds) as avg FROM users WHERE ascended_at IS NOT NULL').get();
         return result.avg || 0;
+    },
+
+    // Get inactive ascended users (for re-engagement)
+    getInactiveAscended(daysSinceActive = 7) {
+        const threshold = new Date(Date.now() - daysSinceActive * 24 * 60 * 60 * 1000).toISOString();
+        return db.prepare(`
+            SELECT * FROM users
+            WHERE ascended_at IS NOT NULL
+            AND last_activity_at < ?
+        `).all(threshold);
     },
 };
 
@@ -268,6 +364,37 @@ const gate5Ops = {
     // Clear schedule for user
     clear(discordId) {
         db.prepare('DELETE FROM gate5_schedule WHERE discord_id = ?').run(discordId);
+    },
+};
+
+// Fragment operations (between-gate DMs)
+const fragmentOps = {
+    // Schedule a fragment DM
+    schedule(discordId, gateNumber, delayMs) {
+        const scheduledFor = new Date(Date.now() + delayMs).toISOString();
+        db.prepare('INSERT INTO fragments (discord_id, gate_number, scheduled_for) VALUES (?, ?, ?)')
+            .run(discordId, gateNumber, scheduledFor);
+    },
+
+    // Get pending fragments
+    getPending() {
+        const now = new Date().toISOString();
+        return db.prepare(`
+            SELECT * FROM fragments
+            WHERE sent = 0 AND scheduled_for <= ?
+            ORDER BY scheduled_for
+        `).all(now);
+    },
+
+    // Mark as sent
+    markSent(id) {
+        db.prepare('UPDATE fragments SET sent = 1, sent_at = ? WHERE id = ?')
+            .run(new Date().toISOString(), id);
+    },
+
+    // Clear for user
+    clear(discordId) {
+        db.prepare('DELETE FROM fragments WHERE discord_id = ?').run(discordId);
     },
 };
 
@@ -317,10 +444,227 @@ const vowOps = {
     },
 };
 
+// Ika memory operations
+const ikaMemoryOps = {
+    // Get or create memory for a user
+    getOrCreate(userId, username) {
+        const existing = db.prepare('SELECT * FROM ika_memory WHERE user_id = ?').get(userId);
+        if (existing) {
+            existing.remembered_facts = JSON.parse(existing.remembered_facts || '[]');
+            existing.inside_jokes = JSON.parse(existing.inside_jokes || '[]');
+            existing.notable_moments = JSON.parse(existing.notable_moments || '[]');
+            return existing;
+        }
+
+        db.prepare('INSERT INTO ika_memory (user_id, username) VALUES (?, ?)').run(userId, username);
+        return this.get(userId);
+    },
+
+    // Get memory
+    get(userId) {
+        const memory = db.prepare('SELECT * FROM ika_memory WHERE user_id = ?').get(userId);
+        if (!memory) return null;
+
+        memory.remembered_facts = JSON.parse(memory.remembered_facts || '[]');
+        memory.inside_jokes = JSON.parse(memory.inside_jokes || '[]');
+        memory.notable_moments = JSON.parse(memory.notable_moments || '[]');
+        return memory;
+    },
+
+    // Update from user's journey (when they ascend)
+    syncFromUser(userId) {
+        const user = userOps.get(userId);
+        if (!user) return;
+
+        db.prepare(`
+            UPDATE ika_memory
+            SET why_they_came = ?,
+                their_vow = ?,
+                their_memory_answer = ?
+            WHERE user_id = ?
+        `).run(user.gate_5_reason, user.gate_7_vow, user.gate_2_answer, userId);
+    },
+
+    // Increment interaction count
+    recordInteraction(userId) {
+        db.prepare(`
+            UPDATE ika_memory
+            SET interaction_count = interaction_count + 1,
+                last_interaction = CURRENT_TIMESTAMP
+            WHERE user_id = ?
+        `).run(userId);
+
+        // Check for relationship level upgrade
+        const memory = this.get(userId);
+        if (!memory) return;
+
+        let newLevel = memory.relationship_level;
+        if (memory.interaction_count >= 100 && memory.relationship_level !== 'devoted') {
+            newLevel = 'devoted';
+        } else if (memory.interaction_count >= 50 && ['new', 'familiar'].includes(memory.relationship_level)) {
+            newLevel = 'close';
+        } else if (memory.interaction_count >= 10 && memory.relationship_level === 'new') {
+            newLevel = 'familiar';
+        }
+
+        if (newLevel !== memory.relationship_level) {
+            db.prepare('UPDATE ika_memory SET relationship_level = ? WHERE user_id = ?').run(newLevel, userId);
+            return newLevel; // Return new level for milestone notification
+        }
+        return null;
+    },
+
+    // Add a remembered fact
+    rememberFact(userId, fact) {
+        const memory = this.get(userId);
+        if (!memory) return;
+
+        const facts = memory.remembered_facts;
+        facts.push({ fact, timestamp: Date.now() });
+
+        // Keep only last 10 facts
+        while (facts.length > 10) facts.shift();
+
+        db.prepare('UPDATE ika_memory SET remembered_facts = ? WHERE user_id = ?')
+            .run(JSON.stringify(facts), userId);
+    },
+
+    // Add an inside joke
+    addInsideJoke(userId, joke) {
+        const memory = this.get(userId);
+        if (!memory) return;
+
+        const jokes = memory.inside_jokes;
+        jokes.push({ joke, timestamp: Date.now() });
+
+        // Keep only last 5 jokes
+        while (jokes.length > 5) jokes.shift();
+
+        db.prepare('UPDATE ika_memory SET inside_jokes = ? WHERE user_id = ?')
+            .run(JSON.stringify(jokes), userId);
+    },
+
+    // Set nickname
+    setNickname(userId, nickname) {
+        db.prepare('UPDATE ika_memory SET nickname = ? WHERE user_id = ?').run(nickname, userId);
+    },
+
+    // Record notable moment
+    addNotableMoment(userId, description) {
+        const memory = this.get(userId);
+        if (!memory) return;
+
+        const moments = memory.notable_moments;
+        moments.push({ description, timestamp: Date.now() });
+
+        // Keep only last 10 moments
+        while (moments.length > 10) moments.shift();
+
+        db.prepare('UPDATE ika_memory SET notable_moments = ? WHERE user_id = ?')
+            .run(JSON.stringify(moments), userId);
+    },
+
+    // Get devotees with memory (for callbacks)
+    getDevoteesWithMemory() {
+        return db.prepare(`
+            SELECT * FROM ika_memory
+            WHERE why_they_came IS NOT NULL
+            AND interaction_count > 5
+            ORDER BY RANDOM()
+            LIMIT 10
+        `).all().map(m => {
+            m.remembered_facts = JSON.parse(m.remembered_facts || '[]');
+            m.inside_jokes = JSON.parse(m.inside_jokes || '[]');
+            m.notable_moments = JSON.parse(m.notable_moments || '[]');
+            return m;
+        });
+    },
+
+    // Get users by relationship level
+    getByRelationshipLevel(level) {
+        return db.prepare('SELECT * FROM ika_memory WHERE relationship_level = ?').all(level);
+    },
+};
+
+// Ika message logging
+const ikaMessageOps = {
+    log(channelId, triggerUserId, triggerContent, response, responseType, mood) {
+        db.prepare(`
+            INSERT INTO ika_messages (channel_id, trigger_user_id, trigger_content, response, response_type, mood)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `).run(channelId, triggerUserId, triggerContent, response, responseType, mood);
+    },
+
+    getRecent(limit = 50) {
+        return db.prepare('SELECT * FROM ika_messages ORDER BY timestamp DESC LIMIT ?').all(limit);
+    },
+
+    getTodayCount() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return db.prepare('SELECT COUNT(*) as count FROM ika_messages WHERE timestamp >= ?').get(today.toISOString()).count;
+    },
+};
+
+// Ika moments (initiated conversations)
+const ikaMomentOps = {
+    log(momentType, content) {
+        db.prepare('INSERT INTO ika_moments (moment_type, content) VALUES (?, ?)').run(momentType, content);
+    },
+
+    getRecent(limit = 20) {
+        return db.prepare('SELECT * FROM ika_moments ORDER BY timestamp DESC LIMIT ?').all(limit);
+    },
+
+    getTodayCount() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return db.prepare('SELECT COUNT(*) as count FROM ika_moments WHERE timestamp >= ?').get(today.toISOString()).count;
+    },
+};
+
+// Ika state management
+const ikaStateOps = {
+    get(key) {
+        const row = db.prepare('SELECT value FROM ika_state WHERE key = ?').get(key);
+        return row ? row.value : null;
+    },
+
+    set(key, value) {
+        db.prepare(`
+            INSERT INTO ika_state (key, value, updated_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP
+        `).run(key, value, value);
+    },
+
+    getCurrentMood() {
+        return this.get('current_mood') || 'normal';
+    },
+
+    setCurrentMood(mood) {
+        this.set('current_mood', mood);
+    },
+
+    getLastSpoke() {
+        const val = this.get('last_spoke_at');
+        return val ? parseInt(val) : 0;
+    },
+
+    setLastSpoke() {
+        this.set('last_spoke_at', Date.now().toString());
+    },
+};
+
 module.exports = {
     db,
     userOps,
     gate5Ops,
+    fragmentOps,
     offeringOps,
     vowOps,
+    ikaMemoryOps,
+    ikaMessageOps,
+    ikaMomentOps,
+    ikaStateOps,
 };
