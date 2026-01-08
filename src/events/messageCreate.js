@@ -22,6 +22,13 @@ const { scheduleFragment } = require('../gates/fragments');
 const path = require('path');
 const fs = require('fs');
 
+// Import optimization systems (v3.3.0)
+const {
+    spamDetector,
+    rateLimiter,
+    userTiering,
+} = require('../utils/optimization');
+
 // Cooldown map for Easter eggs (prevents spam)
 const easterEggCooldowns = new Map();
 const COOLDOWN_MS = 60000; // 1 minute between Easter egg responses per user
@@ -32,6 +39,17 @@ module.exports = {
     async execute(message) {
         // Ignore bot messages
         if (message.author.bot) return;
+
+        // === SPAM DETECTION (v3.3.0) ===
+        // Check for spam before processing any message
+        if (spamDetector && config.optimization?.enableSpamDetection !== false) {
+            const spamResult = spamDetector.check(message.author.id, message.content);
+            if (spamResult.isSpam) {
+                // Silently ignore spam - no response
+                console.log(`✧ Spam detected from ${message.author.tag}: ${spamResult.reason}`);
+                return;
+            }
+        }
 
         // Handle Gate 1 (waiting room)
         if (message.channel.id === config.channels.waitingRoom) {

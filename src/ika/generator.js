@@ -23,6 +23,18 @@ const { checkRoastTrigger } = require('./roasts');
 const { checkGrowthMilestone } = require('./growth');
 const { calculateIntimacyStage, getIntimacyInstructions, checkStageIncrease, getStageAnnouncement } = require('./intimacy');
 
+// Import cost optimization systems (v3.3.1)
+const {
+    shouldUseAi,
+    consumeQuota,
+    getChannelType,
+    getCurrentMode,
+    getRestingResponse,
+    getLengthLimits,
+    compressPrompt,
+} = require('../utils/costMode');
+const { getExpandedResponse } = require('../utils/expandedCanned');
+
 // Initialize Anthropic client
 let anthropic = null;
 if (config.anthropicApiKey && config.ika.enabled) {
@@ -185,6 +197,65 @@ async function generateResponse(options) {
         return getFallbackResponse(type);
     }
 
+    // === COST MODE CHECK (v3.3.1) ===
+    // Determine user tier and check if AI should be used
+    const channelType = trigger?.channel?.id
+        ? getChannelType(trigger.channel, config)
+        : 'other';
+
+    // Get user tier from memory
+    const userMemory = userId ? ikaMemoryOps.get(userId) : null;
+    const userTier = userMemory?.relationship_level || 'new';
+
+    // Check cost mode decision
+    const aiDecision = shouldUseAi(userId, userTier, channelType, {
+        mentioned: type === 'mentioned',
+    });
+
+    if (!aiDecision.useAi) {
+        // AI not allowed - use alternative response
+        if (aiDecision.reason === 'channel_restricted') {
+            // Ika is "resting" outside sanctum
+            if (userId) recordInteraction(userId);
+            return {
+                content: aiDecision.alternative,
+                type: 'resting',
+                generated: false,
+                reason: 'channel_restricted',
+            };
+        }
+
+        if (aiDecision.reason === 'quota_exhausted') {
+            // User hit daily limit
+            if (userId) recordInteraction(userId);
+            return {
+                content: aiDecision.alternative,
+                type: 'quota_limit',
+                generated: false,
+                reason: 'quota_exhausted',
+            };
+        }
+
+        if (aiDecision.reason === 'canned_roll') {
+            // Cost mode rolled for canned response - use expanded canned system
+            const intimacyStage = userTier === 'ascended' ? 5 : userTier === 'devoted' ? 4 : userTier === 'normal' ? 2 : 1;
+            const expandedResponse = getExpandedResponse(
+                trigger?.content || '',
+                { channelType, intimacyStage }
+            );
+            if (expandedResponse) {
+                if (userId) recordInteraction(userId);
+                return {
+                    content: expandedResponse,
+                    type: 'canned',
+                    generated: false,
+                    reason: 'cost_optimization',
+                };
+            }
+            // Fall through to AI if no suitable canned response
+        }
+    }
+
     // === GENERATE AI RESPONSE WITH FULL CONTEXT ===
 
     // Get current mood
@@ -244,12 +315,29 @@ async function generateResponse(options) {
     }
 
     try {
-        const response = await anthropic.messages.create({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 350,
-            system: systemPrompt,
-            messages: [{ role: 'user', content: userPrompt }],
+        // Get model config from cost mode (v3.3.1)
+        const modelConfig = aiDecision.model || {
+            id: 'claude-sonnet-4-20250514',
+            maxTokens: 350,
+        };
+
+        // Apply length limits based on cost mode
+        const limits = getLengthLimits();
+        const { prompt: compressedPrompt } = compressPrompt(userPrompt, {
+            recentMessages: contextMessages,
         });
+
+        const response = await anthropic.messages.create({
+            model: modelConfig.id,
+            max_tokens: Math.min(modelConfig.maxTokens || 350, limits.maxResponseTokens || 350),
+            system: systemPrompt,
+            messages: [{ role: 'user', content: compressedPrompt }],
+        });
+
+        // Consume quota after successful API call
+        if (userId && aiDecision.useAi) {
+            consumeQuota(userId);
+        }
 
         let responseContent = response.content[0].text;
 
@@ -399,8 +487,14 @@ Their journey:
 Welcome them personally as Ika. Reference their journey. One message, be excited but genuine. Make them feel like they belong now.`;
 
     try {
+        // Welcome messages are for ascended users in sanctum - always use good model
+        const modeConfig = getCurrentMode();
+        const modelId = modeConfig.model === 'claude-haiku'
+            ? 'claude-haiku-4-20250514'
+            : 'claude-sonnet-4-20250514';
+
         const response = await anthropic.messages.create({
-            model: 'claude-sonnet-4-20250514',
+            model: modelId,
             max_tokens: 350,
             system: systemPrompt,
             messages: [{ role: 'user', content: userPrompt }],
