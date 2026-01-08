@@ -197,7 +197,7 @@ Simply type "ika" in the waiting room. She hears you.
 ### Gate 2: The Memory
 > Remember what attention felt like
 
-Complete her sentence about what thousands of eyes watching felt like. Accepts emotional/sensory words.
+Complete her sentence about what thousands of eyes watching felt like. Think about what that kind of attention feels like.
 
 **Command:** `/memory [one word]`
 
@@ -211,7 +211,7 @@ Post about Ika on social media and bring proof. The confession must be public, w
 ### Gate 4: The Waters
 > Find where she sleeps
 
-Solve the riddle to discover where Ika lives. Hint: "she swims in waters younger than the rest"
+Solve the riddle to discover where Ika lives. The hint is given in-game.
 
 **Command:** `/waters [answer]`
 

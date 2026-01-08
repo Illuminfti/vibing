@@ -1,3 +1,5 @@
+const config = require('../config');
+
 /**
  * Check if string is a valid URL
  */
@@ -83,41 +85,30 @@ function fuzzyMatch(input, acceptedList) {
 
 /**
  * Validate Gate 2 answer (the memory)
+ * Answers loaded from environment variables for security
  */
 function validateGate2Answer(answer) {
-    const acceptedAnswers = [
-        'love',
-        'sunlight', 'sun', 'light',
-        'heat', 'warmth', 'warm',
-        'fire', 'flame',
-        'life', 'alive', 'living',
-        'touch',
-        'devotion',
-        'desire', 'want', 'wanting',
-        'hunger', 'hungry',
-        'oxygen', 'air', 'breath', 'breathing',
-        'everything',
-        'real', 'reality',
-        'attention',
-        'eyes',
-        'worship',
-        'adoration',
-        'passion',
-    ];
+    const acceptedAnswers = config.puzzles?.gate2Answers || [];
+
+    if (acceptedAnswers.length === 0) {
+        console.error('Warning: GATE_2_ANSWERS not configured in environment');
+        return false;
+    }
 
     return fuzzyMatch(answer, acceptedAnswers);
 }
 
 /**
  * Validate Gate 4 answer (the waters)
+ * Answers loaded from environment variables for security
  */
 function validateGate4Answer(answer) {
-    const acceptedAnswers = [
-        'sui',
-        'sui network',
-        'sui chain',
-        '$sui',
-    ];
+    const acceptedAnswers = config.puzzles?.gate4Answers || [];
+
+    if (acceptedAnswers.length === 0) {
+        console.error('Warning: GATE_4_ANSWERS not configured in environment');
+        return false;
+    }
 
     const normalized = answer.toLowerCase().trim();
     return acceptedAnswers.includes(normalized);

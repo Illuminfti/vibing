@@ -117,4 +117,15 @@ module.exports = {
         5: process.env.CHAMBER_5_ID,
         6: process.env.CHAMBER_6_ID,
     },
+
+    // Puzzle answers (loaded from .env to keep them secret)
+    // These should NOT be committed to the repository
+    puzzles: {
+        gate2Answers: process.env.GATE_2_ANSWERS
+            ? process.env.GATE_2_ANSWERS.split(',').map(a => a.trim().toLowerCase())
+            : [],
+        gate4Answers: process.env.GATE_4_ANSWERS
+            ? process.env.GATE_4_ANSWERS.split(',').map(a => a.trim().toLowerCase())
+            : [],
+    },
 };

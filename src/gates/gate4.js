@@ -2,7 +2,7 @@
  * Gate 4: The Waters
  *
  * User must solve a riddle to discover where Ika lives.
- * Answer: sui / sui network / sui chain / $sui
+ * Accepted answers are configured via GATE_4_ANSWERS env variable.
  * Triggered by /waters [answer] command.
  */
 
