@@ -12,9 +12,15 @@ module.exports = {
             return;
         }
 
-        // Handle button interactions (if any)
+        // Handle button interactions
         if (interaction.isButton()) {
             await handleButton(interaction);
+            return;
+        }
+
+        // Handle select menu interactions
+        if (interaction.isStringSelectMenu()) {
+            await handleSelectMenu(interaction);
             return;
         }
     },
@@ -50,6 +56,46 @@ async function handleSlashCommand(interaction) {
  * Handle button interactions
  */
 async function handleButton(interaction) {
-    // Reserved for future button interactions
-    console.log(`Button interaction: ${interaction.customId}`);
+    const customId = interaction.customId;
+
+    // Admin panel buttons
+    if (customId.startsWith('admin_')) {
+        try {
+            const adminPanel = require('../commands/adminPanel');
+            await adminPanel.handleComponent(interaction);
+        } catch (error) {
+            console.error('Error handling admin panel button:', error);
+            if (!interaction.replied && !interaction.deferred) {
+                await interaction.reply({ content: '❌ Error processing action', ephemeral: true });
+            }
+        }
+        return;
+    }
+
+    // Other button handlers can be added here
+    console.log(`Unhandled button interaction: ${customId}`);
+}
+
+/**
+ * Handle select menu interactions
+ */
+async function handleSelectMenu(interaction) {
+    const customId = interaction.customId;
+
+    // Admin panel select menus
+    if (customId.startsWith('admin_')) {
+        try {
+            const adminPanel = require('../commands/adminPanel');
+            await adminPanel.handleComponent(interaction);
+        } catch (error) {
+            console.error('Error handling admin panel select:', error);
+            if (!interaction.replied && !interaction.deferred) {
+                await interaction.reply({ content: '❌ Error processing selection', ephemeral: true });
+            }
+        }
+        return;
+    }
+
+    // Other select menu handlers can be added here
+    console.log(`Unhandled select menu interaction: ${customId}`);
 }
