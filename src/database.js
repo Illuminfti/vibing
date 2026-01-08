@@ -148,7 +148,18 @@ db.exec(`
         dms_enabled INTEGER DEFAULT 1,
         dm_failures INTEGER DEFAULT 0,
         last_dm_attempt DATETIME,
-        unprompted_opt_in INTEGER DEFAULT 0
+        unprompted_opt_in INTEGER DEFAULT 0,
+
+        -- WAIFU EXPERIENCE SYSTEMS (v3.2.0)
+        shrine TEXT DEFAULT '{}',
+        yandere_stage INTEGER DEFAULT 1,
+        betrayal_count INTEGER DEFAULT 0,
+        betrayal_type TEXT,
+        redemption_stage INTEGER DEFAULT 0,
+        last_kabedon DATETIME,
+        romance_heat INTEGER DEFAULT 0,
+        forbidden_tier INTEGER DEFAULT 0,
+        ritual_tokens TEXT DEFAULT '{}'
     );
 
     -- Lore fragment tracking
@@ -659,6 +670,27 @@ const ikaMemoryOps = {
         memory.inside_jokes = JSON.parse(memory.inside_jokes || '[]');
         memory.notable_moments = JSON.parse(memory.notable_moments || '[]');
         return memory;
+    },
+
+    // Update memory fields dynamically
+    update(userId, fields) {
+        if (!fields || Object.keys(fields).length === 0) return;
+
+        const setClauses = [];
+        const values = [];
+
+        for (const [key, value] of Object.entries(fields)) {
+            setClauses.push(`${key} = ?`);
+            values.push(value);
+        }
+
+        values.push(userId);
+
+        db.prepare(`
+            UPDATE ika_memory
+            SET ${setClauses.join(', ')}
+            WHERE user_id = ?
+        `).run(...values);
     },
 
     // Update from user's journey (when they ascend)
@@ -1658,9 +1690,55 @@ const fragmentLogOps = {
     },
 };
 
+// Gate progress operations (wrapper for gate-related queries)
+const gateOps = {
+    // Get user's gate progress details
+    getProgress(discordId) {
+        const user = userOps.get(discordId);
+        if (!user) return { currentGate: 0, completedGates: [], totalCompleted: 0 };
+
+        const completedGates = [];
+        for (let i = 1; i <= 7; i++) {
+            if (user[`gate_${i}_at`]) {
+                completedGates.push({
+                    gate: i,
+                    completedAt: user[`gate_${i}_at`],
+                });
+            }
+        }
+
+        return {
+            currentGate: userOps.getCurrentGate(discordId),
+            completedGates,
+            totalCompleted: completedGates.length,
+            isAscended: !!user.ascended_at,
+            ascendedAt: user.ascended_at,
+            startedAt: user.gate_1_at,
+            totalTimeSeconds: user.total_time_seconds,
+        };
+    },
+
+    // Check if user has access to a gate
+    hasAccess(discordId, gateNumber) {
+        if (gateNumber === 1) return true;
+        return userOps.hasCompletedGate(discordId, gateNumber - 1);
+    },
+
+    // Get gate completion stats
+    getStats() {
+        return userOps.getStats();
+    },
+
+    // Get first completions
+    getFirsts() {
+        return userOps.getFirsts();
+    },
+};
+
 module.exports = {
     db,
     userOps,
+    gateOps,
     gate5Ops,
     fragmentOps,
     offeringOps,

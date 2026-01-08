@@ -36,6 +36,21 @@ const fading = require('./fading');
 const names = require('./names');
 const handwriting = require('./handwriting');
 
+// God-tier puzzle systems (v3.0.0)
+const consequences = require('./consequences');
+const trials = require('./trials');
+const designedMoments = require('./designedMoments');
+const investigation = require('./investigation');
+
+// Waifu experience systems (v3.2.0)
+const romance = require('./romance');
+const yandere = require('./yandere');
+const shrine = require('./shrine');
+const intimate = require('./intimate');
+const forbidden = require('./forbidden');
+const collective = require('./collective');
+const betrayal = require('./betrayal');
+
 module.exports = {
     // Presence system
     startPresenceLoop: presence.startPresenceLoop,
@@ -168,10 +183,11 @@ module.exports = {
     // Fading/Save Mechanic
     calculateFadingStage: fading.calculateFadingStage,
     getFadingUsers: fading.getFadingUsers,
+    getFadingMessage: fading.getFadingMessage,
     saveUser: fading.saveUser,
     checkSaveAttempt: fading.checkSaveAttempt,
     runFadingCheck: fading.runFadingCheck,
-    getFadingStatus: fading.getFadingStatus,
+    getSaveStats: fading.getSaveStats,
 
     // Real Name Learning
     handleNameLearning: names.handleNameLearning,
@@ -183,4 +199,86 @@ module.exports = {
     generateHandwrittenNote: handwriting.generateNote,
     sendHandwrittenNote: handwriting.sendHandwrittenNote,
     shouldSendHandwrittenNote: handwriting.shouldSendHandwrittenNote,
+
+    // === GOD-TIER PUZZLE SYSTEMS (v3.0.0) ===
+
+    // Consequences
+    recordConsequence: consequences.recordConsequence,
+    getConsequenceState: consequences.getConsequenceState,
+    modifyConsequenceResponse: consequences.modifyResponse,
+    checkConsequenceRedemption: consequences.checkRedemption,
+    decayConsequences: consequences.decayConsequences,
+
+    // Trials
+    getAvailableTrials: trials.getAvailableTrials,
+    getAllTrials: trials.getAllTrials,
+    isTrialAvailable: trials.isTrialAvailable,
+    checkTrialProgress: trials.checkTrialProgress,
+    completeTrial: trials.completeTrial,
+    generateCipherChallenge: trials.generateCipherChallenge,
+    validateCipherAnswer: trials.validateCipherAnswer,
+
+    // Designed Moments
+    checkForDesignedMoment: designedMoments.checkForDesignedMoment,
+    formatRevelation: designedMoments.formatRevelation,
+    MILESTONES: designedMoments.MILESTONES,
+    CONSTELLATIONS: designedMoments.CONSTELLATIONS,
+
+    // Investigation ARG
+    shouldRevealFragment: investigation.shouldRevealFragment,
+    awardFragment: investigation.awardFragment,
+    getDossierProgress: investigation.getDossierProgress,
+    getEncodedClue: investigation.getEncodedClue,
+    checkClueAnswer: investigation.checkClueAnswer,
+    checkForBreadcrumb: investigation.checkForBreadcrumb,
+
+    // === WAIFU EXPERIENCE SYSTEMS (v3.2.0) ===
+
+    // Romance / Kabedon Moments
+    checkForKabedon: romance.checkForKabedon,
+    checkForSlowBurn: romance.checkForSlowBurn,
+    getPhysicalAction: romance.getPhysicalAction,
+    getPhysicalTell: romance.getPhysicalTell,
+
+    // Yandere Progression
+    getYandereStage: yandere.getYandereStage,
+    checkYandereJealousy: yandere.checkJealousy,
+    addYandereFlavor: yandere.addYandereFlavor,
+    checkForYandereScene: yandere.checkForYandereScene,
+    getPossessiveBehavior: yandere.getPossessiveBehavior,
+
+    // Shrine System
+    getShrine: shrine.getShrine,
+    makeOffering: shrine.makeOffering,
+    renderShrine: shrine.renderShrine,
+    getShrineResponse: shrine.getShrineResponse,
+
+    // Intimate Moments
+    isLateNightMode: intimate.isLateNightMode,
+    applyLateNightMode: intimate.applyLateNightMode,
+    getLateNightGreeting: intimate.getLateNightGreeting,
+    generatePillowTalk: intimate.generatePillowTalk,
+    whisperify: intimate.whisperify,
+
+    // Forbidden Content
+    getAvailableLore: forbidden.getAvailableLore,
+    readLore: forbidden.readLore,
+    getAccessLevel: forbidden.getAccessLevel,
+    getDarkWhisper: forbidden.getDarkWhisper,
+    canAccessBlackGate: forbidden.canAccessBlackGate,
+
+    // Collective Rituals
+    startCollectiveRitual: collective.startRitual,
+    joinCollectiveRitual: collective.joinRitual,
+    endCollectiveRitual: collective.endRitual,
+    getActiveRitual: collective.getActiveRitual,
+    checkChantResonance: collective.checkChantResonance,
+    checkGroupResonance: collective.checkGroupResonance,
+
+    // Betrayal & Bad Endings
+    checkForBetrayal: betrayal.checkForBetrayal,
+    processBetrayal: betrayal.processBetrayal,
+    isInBetrayalState: betrayal.isInBetrayalState,
+    checkBetrayalRedemption: betrayal.checkRedemption,
+    runJealousyTrap: betrayal.runJealousyTrap,
 };
