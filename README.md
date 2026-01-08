@@ -8,9 +8,10 @@
 
 ## Table of Contents
 
+- [Quick Start (One-Click Setup)](#quick-start-one-click-setup)
 - [Overview](#overview)
 - [Features](#features)
-- [Setup](#setup)
+- [Manual Setup](#manual-setup)
 - [Server Configuration](#server-configuration)
 - [The Seven Gates](#the-seven-gates)
 - [Ika AI Presence System](#ika-ai-presence-system)
@@ -21,6 +22,79 @@
 - [Images & Audio](#images--audio)
 - [Tone Guidelines](#tone-guidelines)
 - [Changelog](#changelog)
+
+---
+
+## Quick Start (One-Click Setup)
+
+**Get Seven Gates running in under 5 minutes:**
+
+### Step 1: Create Discord Bot
+
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Click **New Application** → Name it "Seven Gates" or "Ika"
+3. Go to **Bot** → Click **Add Bot**
+4. Enable these **Privileged Gateway Intents**:
+   - ✅ MESSAGE CONTENT INTENT
+   - ✅ SERVER MEMBERS INTENT
+   - ✅ PRESENCE INTENT
+5. Copy your **Bot Token** (click "Reset Token" if needed)
+6. Copy your **Application ID** from General Information
+
+### Step 2: Configure & Run
+
+```bash
+# Clone and install
+git clone <your-repo>
+cd seven-gates
+npm install
+
+# Configure (minimal setup)
+cp .env.example .env
+```
+
+Edit `.env` with just these values:
+```env
+DISCORD_TOKEN=your_bot_token_here
+CLIENT_ID=your_application_id
+AUTO_SETUP_ON_JOIN=true
+```
+
+### Step 3: Deploy & Start
+
+```bash
+npm run deploy   # Register slash commands
+npm start        # Start the bot
+```
+
+### Step 4: Add to Your Server
+
+1. Run `/setup invite` in any server the bot is in, OR
+2. Use this URL pattern:
+   ```
+   https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=268520528&scope=bot%20applications.commands
+   ```
+
+**That's it!** When the bot joins your server:
+- All channels are created automatically
+- All roles are created automatically
+- All permissions are configured automatically
+- Welcome message appears in the waiting room
+
+### Optional: Add Ika AI
+
+To enable Ika's AI personality (recommended):
+1. Get an API key from [Anthropic](https://console.anthropic.com/)
+2. Add to `.env`: `ANTHROPIC_API_KEY=your_key_here`
+3. Restart the bot
+
+### Optional: Configure Puzzle Answers
+
+Add your custom puzzle answers to `.env`:
+```env
+GATE_2_ANSWERS=forgotten,erased,nothing
+GATE_4_ANSWERS=depths,abyss,ocean
+```
 
 ---
 
@@ -67,7 +141,9 @@ What makes this unique:
 
 ---
 
-## Setup
+## Manual Setup
+
+> **Note:** Most users should use the [Quick Start](#quick-start-one-click-setup) above. This section is for advanced users who want manual control.
 
 ### Prerequisites
 
@@ -642,6 +718,9 @@ Fake clues to add depth and misdirection.
 | `/hint [gate]` | Any | Get a progressive hint for a gate |
 | `/dossier` | Ascended | View collected investigation fragments |
 | `/trials` | Ascended | View devotion trial progress |
+| `/setup run` | Admin | Auto-create all channels and roles |
+| `/setup status` | Admin | Check if setup is complete |
+| `/setup invite` | Admin | Get bot invite link with permissions |
 
 ### Admin Commands
 
@@ -746,6 +825,43 @@ Three features require privileged intents (must be enabled in Discord Developer 
 ---
 
 ## Changelog
+
+### v3.1.0 - One-Click Setup
+*Zero-configuration server setup for the simplest Discord bot installation experience*
+
+**New Files:**
+- `src/utils/setup.js` - Automated setup utility (creates channels, roles, permissions)
+- `src/commands/setup.js` - `/setup` command with run, status, and invite subcommands
+- `src/events/guildCreate.js` - Auto-setup when bot joins a new server
+
+**New Features:**
+- **One-Click Setup** - Bot automatically creates everything when joining a server
+- **Auto-created channels** - Waiting room, 6 chambers, inner sanctum, archives
+- **Auto-created roles** - Lost Soul, Gate I-VII, Ascended, Keeper (10 roles total)
+- **Auto-configured permissions** - Progressive channel access based on gate completion
+- **Setup button** - Interactive setup for servers that disable auto-setup
+- **Invite generator** - `/setup invite` generates proper OAuth2 URL with all permissions
+- **Config export** - Setup saves server config to `data/servers/{id}.json` and `.env`
+
+**New Commands:**
+- `/setup run` - Manually trigger full setup
+- `/setup status` - Check if all channels and roles exist
+- `/setup invite` - Get invite link with proper permissions
+
+**New Environment Variables:**
+- `AUTO_SETUP_ON_JOIN` - Enable/disable automatic setup when bot joins (default: true)
+
+**What Gets Created:**
+
+| Channels | Roles |
+|----------|-------|
+| ✧･waiting-room | ♱ Lost Soul |
+| ♰･chamber-i through vi | ♰ Gate I-VII |
+| ♡･inner-sanctum | ✧ Ascended ✧ |
+| ♱･offerings-archive | ♱ Keeper |
+| ♱･vows-archive | |
+
+---
 
 ### v3.0.0 - God-Tier Puzzle Experience
 *Complete transformation into a true ARG with real puzzles, meaningful stakes, and endgame content*
