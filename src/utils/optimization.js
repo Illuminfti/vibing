@@ -8,6 +8,12 @@
  * - User tiering for priority responses
  * - Memory management and data archival
  *
+ * IMPORTANT LIMITATION:
+ * Rate limiting data is stored in memory (Map objects) and will be reset
+ * when the bot restarts. This is a known limitation for simplicity.
+ * For production deployments with strict rate limiting requirements,
+ * consider persisting rate limit state to Redis or the database.
+ *
  * @version 3.3.0
  */
 

@@ -10,6 +10,14 @@
  * @version 3.3.0
  */
 
+// Allowlist for memory columns that can be updated dynamically
+const ALLOWED_ARCHIVAL_COLUMNS = new Set([
+    'remembered_facts',
+    'inside_jokes',
+    'notable_moments',
+    'growth_milestones_hit',
+]);
+
 // ═══════════════════════════════════════════════════════════════
 // ARCHIVAL THRESHOLDS
 // ═══════════════════════════════════════════════════════════════
@@ -313,11 +321,23 @@ function compactMemoryArrays(db) {
         } catch { /* ignore */ }
 
         if (needsUpdate) {
-            const setClauses = Object.keys(updates).map(k => `${k} = ?`).join(', ');
-            const values = [...Object.values(updates), memory.user_id];
+            // Security: Validate all column names against allowlist
+            const validUpdates = {};
+            for (const [key, value] of Object.entries(updates)) {
+                if (ALLOWED_ARCHIVAL_COLUMNS.has(key)) {
+                    validUpdates[key] = value;
+                } else {
+                    console.error(`Security: Rejected invalid column in archival: ${key}`);
+                }
+            }
 
-            db.prepare(`UPDATE ika_memory SET ${setClauses} WHERE user_id = ?`).run(...values);
-            compacted++;
+            if (Object.keys(validUpdates).length > 0) {
+                const setClauses = Object.keys(validUpdates).map(k => `${k} = ?`).join(', ');
+                const values = [...Object.values(validUpdates), memory.user_id];
+
+                db.prepare(`UPDATE ika_memory SET ${setClauses} WHERE user_id = ?`).run(...values);
+                compacted++;
+            }
         }
     }
 

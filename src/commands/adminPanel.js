@@ -765,8 +765,20 @@ async function buildInspectEmbed(user, section) {
             break;
 
         case 'memory':
-            const facts = memory?.remembered_facts ? JSON.parse(memory.remembered_facts) : [];
-            const jokes = memory?.inside_jokes ? JSON.parse(memory.inside_jokes) : [];
+            let facts = [];
+            let jokes = [];
+            try {
+                facts = memory?.remembered_facts ? JSON.parse(memory.remembered_facts) : [];
+            } catch (e) {
+                console.error('Failed to parse remembered_facts:', e);
+                facts = [];
+            }
+            try {
+                jokes = memory?.inside_jokes ? JSON.parse(memory.inside_jokes) : [];
+            } catch (e) {
+                console.error('Failed to parse inside_jokes:', e);
+                jokes = [];
+            }
             embed.addFields(
                 { name: 'Nickname', value: memory?.nickname || 'None set', inline: true },
                 { name: 'Facts Remembered', value: `${facts.length}`, inline: true },

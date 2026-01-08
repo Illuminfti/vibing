@@ -494,7 +494,15 @@ function checkTrapResponse(userId, message) {
     const memory = ikaMemoryOps.get(userId);
     if (!memory?.active_trap) return null;
 
-    const trapData = JSON.parse(memory.active_trap);
+    let trapData;
+    try {
+        trapData = JSON.parse(memory.active_trap);
+    } catch (e) {
+        console.error('Failed to parse active_trap:', e);
+        // Clear corrupted data
+        ikaMemoryOps.update(userId, { active_trap: null });
+        return null;
+    }
     const trap = JEALOUSY_TRAPS[trapData.type];
     if (!trap) return null;
 

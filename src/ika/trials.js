@@ -273,9 +273,15 @@ function getAvailableTrials(userId) {
     const memory = ikaMemoryOps.get(userId);
     if (!memory) return [];
 
-    const completedTrials = memory.completed_trials
-        ? JSON.parse(memory.completed_trials)
-        : [];
+    let completedTrials = [];
+    try {
+        completedTrials = memory.completed_trials
+            ? JSON.parse(memory.completed_trials)
+            : [];
+    } catch (e) {
+        console.error('Failed to parse completed_trials:', e);
+        completedTrials = [];
+    }
     const completedCount = completedTrials.length;
 
     // Determine tier
@@ -306,9 +312,15 @@ function getAvailableTrials(userId) {
  */
 function getAllTrials(userId) {
     const memory = ikaMemoryOps.get(userId);
-    const completedTrials = memory?.completed_trials
-        ? JSON.parse(memory.completed_trials)
-        : [];
+    let completedTrials = [];
+    try {
+        completedTrials = memory?.completed_trials
+            ? JSON.parse(memory.completed_trials)
+            : [];
+    } catch (e) {
+        console.error('Failed to parse completed_trials:', e);
+        completedTrials = [];
+    }
 
     return Object.values(TRIALS).map(trial => ({
         ...trial,
@@ -366,9 +378,15 @@ function checkTrialProgress(userId, trialId) {
 
         case 'lore_category_complete':
             // Check if any category is complete
-            const loreProgress = memory.lore_progress
-                ? JSON.parse(memory.lore_progress)
-                : {};
+            let loreProgress = {};
+            try {
+                loreProgress = memory.lore_progress
+                    ? JSON.parse(memory.lore_progress)
+                    : {};
+            } catch (e) {
+                console.error('Failed to parse lore_progress:', e);
+                loreProgress = {};
+            }
             const anyComplete = Object.values(loreProgress).some(cat => cat.complete);
             progress.current = anyComplete ? 1 : 0;
             progress.required = 1;
@@ -401,9 +419,15 @@ function completeTrial(userId, trialId) {
     if (!memory) return null;
 
     // Check if already completed
-    const completedTrials = memory.completed_trials
-        ? JSON.parse(memory.completed_trials)
-        : [];
+    let completedTrials = [];
+    try {
+        completedTrials = memory.completed_trials
+            ? JSON.parse(memory.completed_trials)
+            : [];
+    } catch (e) {
+        console.error('Failed to parse completed_trials:', e);
+        completedTrials = [];
+    }
 
     if (completedTrials.includes(trialId)) {
         return { success: false, reason: 'Already completed' };
@@ -514,9 +538,15 @@ function getTrialSummary(userId) {
     const memory = ikaMemoryOps.get(userId);
     if (!memory) return null;
 
-    const completedTrials = memory.completed_trials
-        ? JSON.parse(memory.completed_trials)
-        : [];
+    let completedTrials = [];
+    try {
+        completedTrials = memory.completed_trials
+            ? JSON.parse(memory.completed_trials)
+            : [];
+    } catch (e) {
+        console.error('Failed to parse completed_trials:', e);
+        completedTrials = [];
+    }
 
     const completedCount = completedTrials.length;
     const totalTrials = Object.keys(TRIALS).length;

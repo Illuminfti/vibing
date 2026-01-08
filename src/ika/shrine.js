@@ -229,7 +229,7 @@ function getShrine(userId) {
     const memory = ikaMemoryOps.get(userId);
     if (!memory) return null;
 
-    const shrine = memory.shrine ? JSON.parse(memory.shrine) : {
+    const defaultShrine = {
         tier: 1,
         totalOfferings: 0,
         streak: 0,
@@ -237,6 +237,14 @@ function getShrine(userId) {
         decorations: [],
         offerings: [],
     };
+
+    let shrine = defaultShrine;
+    try {
+        shrine = memory.shrine ? JSON.parse(memory.shrine) : defaultShrine;
+    } catch (e) {
+        console.error('Failed to parse shrine data:', e);
+        shrine = defaultShrine;
+    }
 
     // Calculate current tier
     for (let t = 5; t >= 1; t--) {

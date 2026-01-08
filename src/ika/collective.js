@@ -314,7 +314,13 @@ function applyRitualReward(userId, reward) {
     }
 
     if (reward.shrine_offering) {
-        const shrine = memory.shrine ? JSON.parse(memory.shrine) : { totalOfferings: 0 };
+        let shrine = { totalOfferings: 0 };
+        try {
+            shrine = memory.shrine ? JSON.parse(memory.shrine) : { totalOfferings: 0 };
+        } catch (e) {
+            console.error('Failed to parse shrine data:', e);
+            shrine = { totalOfferings: 0 };
+        }
         shrine.totalOfferings += reward.shrine_offering;
         updates.shrine = JSON.stringify(shrine);
     }

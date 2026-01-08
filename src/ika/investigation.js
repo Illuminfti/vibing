@@ -209,7 +209,13 @@ function shouldRevealFragment(userId, trigger, context = {}) {
     if (!memory) return null;
 
     // Get user's collected fragments
-    const collected = memory.collected_fragments ? JSON.parse(memory.collected_fragments) : [];
+    let collected = [];
+    try {
+        collected = memory.collected_fragments ? JSON.parse(memory.collected_fragments) : [];
+    } catch (e) {
+        console.error('Failed to parse collected_fragments:', e);
+        collected = [];
+    }
 
     for (const [id, fragment] of Object.entries(DOSSIER_FRAGMENTS)) {
         // Skip already collected
@@ -238,7 +244,13 @@ function awardFragment(userId, fragmentId) {
     const memory = ikaMemoryOps.get(userId);
     if (!memory) return false;
 
-    const collected = memory.collected_fragments ? JSON.parse(memory.collected_fragments) : [];
+    let collected = [];
+    try {
+        collected = memory.collected_fragments ? JSON.parse(memory.collected_fragments) : [];
+    } catch (e) {
+        console.error('Failed to parse collected_fragments:', e);
+        collected = [];
+    }
 
     if (collected.includes(fragmentId)) return false;
 
@@ -257,7 +269,13 @@ function getDossierProgress(userId) {
     const memory = ikaMemoryOps.get(userId);
     if (!memory) return null;
 
-    const collected = memory.collected_fragments ? JSON.parse(memory.collected_fragments) : [];
+    let collected = [];
+    try {
+        collected = memory.collected_fragments ? JSON.parse(memory.collected_fragments) : [];
+    } catch (e) {
+        console.error('Failed to parse collected_fragments:', e);
+        collected = [];
+    }
 
     const progress = {
         total_fragments: Object.keys(DOSSIER_FRAGMENTS).length,

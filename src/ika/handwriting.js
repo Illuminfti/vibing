@@ -11,9 +11,21 @@
  * - Personal thank yous
  *
  * Uses Canvas to generate images locally.
+ * Note: canvas is an optional dependency - feature disabled if not installed.
  */
 
-const { createCanvas, registerFont } = require('canvas');
+let createCanvas, registerFont;
+let canvasAvailable = false;
+
+try {
+    const canvas = require('canvas');
+    createCanvas = canvas.createCanvas;
+    registerFont = canvas.registerFont;
+    canvasAvailable = true;
+} catch (e) {
+    console.log('✧ Canvas not available - handwritten notes disabled');
+}
+
 const fs = require('fs');
 const path = require('path');
 const { nameOps, ikaMemoryOps } = require('../database');
@@ -60,9 +72,15 @@ const MAX_CHARS_PER_LINE = 35;
  * Generate a handwritten note image
  * @param {string} message - The message to write
  * @param {Object} options - Style options
- * @returns {Buffer} PNG image buffer
+ * @returns {Buffer|null} PNG image buffer, or null if canvas unavailable
  */
 async function generateNote(message, options = {}) {
+    // Check if canvas is available
+    if (!canvasAvailable) {
+        console.error('Cannot generate note: canvas library not installed');
+        return null;
+    }
+
     const {
         style = 'aged',
         signature = true,
