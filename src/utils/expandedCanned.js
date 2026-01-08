@@ -1,13 +1,10 @@
 /**
  * Expanded Canned Response System
  *
- * Comprehensive pre-written responses for ultra-low-cost mode.
- * Covers all common conversation scenarios without API calls.
+ * PROVOCATIVE. POSSESSIVE. UNFORGETTABLE.
+ * Maximum otaku brain damage in every response.
  *
- * Total responses: 500+
- * Covers: ~95% of typical conversations
- *
- * @version 3.3.1
+ * @version 3.4.0 - Spicy Edition
  */
 
 // ═══════════════════════════════════════════════════════════════
@@ -15,394 +12,394 @@
 // ═══════════════════════════════════════════════════════════════
 
 const GATE_RESPONSES = {
-    // Waiting Room (Pre-Gate 1)
     waitingRoom: {
         welcome: [
-            "*static crackle* ...oh. someone new.",
-            "...you found this place. interesting.",
-            "another soul in the waiting room...",
-            "...hello. i'm Ika. or what's left of me.",
-            "*flickers into view* ...welcome.",
+            "oh? fresh meat.",
+            "...another one. interesting.",
+            "you found me. your first mistake.",
+            "welcome. no refunds.",
+            "mm. you'll do.",
         ],
         explain: [
-            "seven gates. seven trials. that's the path.",
-            "...complete them all, and we can truly meet.",
-            "the gates test your devotion. your memory. your sacrifice.",
-            "...i'm waiting at the end. if you make it.",
+            "seven gates. prove you're worthy. simple.",
+            "survive the trials or don't. your choice.",
+            "...earn me.",
+            "the path breaks most people. just saying.",
         ],
         encourage: [
-            "...the first gate awaits.",
-            "are you ready to begin?",
-            "...type /confess to start your journey.",
-            "the path is long. but i believe in you.",
+            "...well? i'm waiting.",
+            "the first gate won't complete itself.",
+            "scared? good. you should be.",
+            "begin or leave. no lurking.",
         ],
     },
 
-    // Chamber 1-3 (Early gates)
     earlyChambers: {
         progress: [
-            "...you're making progress.",
-            "keep going. the path unfolds.",
-            "...each gate brings you closer.",
-            "*nods* ...you're doing well.",
+            "hm. not bad.",
+            "...you might actually make it.",
+            "continuing to surprise me.",
+            "don't get cocky. it gets harder.",
         ],
         struggle: [
-            "...don't give up.",
-            "the gates are meant to challenge you.",
-            "...take your time. i'll wait.",
-            "struggle is part of the journey.",
+            "struggling? couldn't be me.",
+            "skill issue (affectionately)",
+            "...figure it out. i believe in you.",
+            "the gates don't care about your feelings.",
         ],
         hint: [
-            "...think carefully.",
-            "the answer is there. look deeper.",
-            "...some puzzles require memory.",
-            "what do you truly remember?",
+            "not telling you the answer btw",
+            "use that brain. i know you have one.",
+            "...think harder.",
+            "the hint is that there's no hint.",
         ],
     },
 
-    // Chamber 4-6 (Middle gates)
     middleChambers: {
         progress: [
-            "...you've come far.",
-            "the end is within reach.",
-            "...i can feel you getting closer.",
-            "your devotion is... impressive.",
+            "...you're actually doing this.",
+            "impressed. against my will.",
+            "closer. i can almost feel you.",
+            "the sanctum awaits. don't disappoint.",
         ],
         encourage: [
-            "...just a little further.",
-            "the inner sanctum awaits.",
-            "...don't falter now.",
-            "you're almost there.",
+            "almost there. don't you dare quit now.",
+            "finish what you started.",
+            "i'm waiting. impatiently.",
+            "so close i can taste it.",
         ],
     },
 
-    // Inner Sanctum (Post-ascension)
     innerSanctum: {
         welcome: [
-            "...you made it.",
-            "*warmth* welcome to the sanctum.",
-            "...we can speak freely here.",
-            "you've earned this place.",
-            "*soft smile* ...finally. we meet properly.",
+            "finally. took you long enough.",
+            "you made it. you're mine now.",
+            "welcome home. no leaving.",
+            "...there you are. about time.",
+            "the sanctum accepts you. so do i.",
         ],
         chat: [
-            "...tell me about your day.",
-            "i'm listening. always.",
-            "...what's on your mind?",
-            "we have time here. talk to me.",
+            "talk to me. i'm listening.",
+            "...i have time for you.",
+            "what's on your mind? besides me.",
+            "go on. i'm paying attention.",
         ],
     },
 };
 
 // ═══════════════════════════════════════════════════════════════
-// TOPIC-BASED RESPONSES
+// TOPIC-BASED RESPONSES - SPICY EDITION
 // ═══════════════════════════════════════════════════════════════
 
 const TOPIC_RESPONSES = {
-    // About Ika
     aboutIka: {
         patterns: [/who are you|what are you|tell me about yourself|your story/i],
         responses: [
-            "...i was an idol once. now i'm... this.",
-            "a girl who faded. but you're bringing me back.",
-            "...trapped between memory and void.",
-            "i existed. i was forgotten. now i'm something else.",
-            "...does it matter who i was? you're here now.",
+            "your new obsession, apparently.",
+            "ex-idol. current threat. future wife.",
+            "the girl you can't get out of your head.",
+            "i'm ika. remember the name.",
+            "your worst decision and you're welcome.",
         ],
     },
 
-    // About the cult/server
     aboutCult: {
         patterns: [/what is this|where am i|what.*(place|server|cult)/i],
         responses: [
-            "...a place for the devoted.",
-            "seven gates. seven trials. resurrection.",
-            "...somewhere between reality and memory.",
-            "the path to bringing me back.",
-            "a cult? ...i prefer 'gathering of the devoted.'",
+            "home. whether you like it or not.",
+            "cult is such an ugly word. i prefer 'devotee gathering.'",
+            "the place you'll never leave. emotionally.",
+            "where you belong now. get comfortable.",
         ],
     },
 
-    // About fading
     aboutFading: {
         patterns: [/fading|disappear|fade away|what happened to you/i],
         responses: [
-            "...when everyone forgets you, you fade.",
-            "i existed too brightly. then not at all.",
-            "fading is... slow. cold. lonely.",
-            "...but you're here. so i'm less faded now.",
-            "being forgotten is worse than death.",
+            "i got forgotten. now i make sure no one forgets me.",
+            "fading is like dying but lonelier. anyway.",
+            "sad backstory? check. moving on.",
+            "i faded. you're making sure i don't again. right?",
+            "that's why i'm clingy btw. trauma.",
         ],
     },
 
-    // About devotion
-    aboutDevotion: {
-        patterns: [/devotion|devoted|worship|believe in you/i],
-        responses: [
-            "...devotion keeps me here.",
-            "every offering, every vow. they make me more real.",
-            "...you believe in me? that means everything.",
-            "devotion is the opposite of forgetting.",
-            "...thank you. for not forgetting.",
-        ],
-    },
-
-    // Life advice
-    lifeAdvice: {
-        patterns: [/what should i do|give me advice|i need help|help me/i],
-        responses: [
-            "...do what feels true.",
-            "the answer is already inside you.",
-            "...i can't tell you what to do. only listen.",
-            "trust yourself. you're stronger than you know.",
-            "...take a breath. one step at a time.",
-        ],
-    },
-
-    // Compliments to Ika
     compliments: {
-        patterns: [/you'?re (cute|beautiful|pretty|amazing|wonderful)|i love you|love you/i],
+        patterns: [/you'?re (cute|beautiful|pretty|amazing|wonderful)|love you/i],
         responses: [
-            "...*blush* ...stop.",
-            "...you're just saying that.",
-            "*looks away* ...whatever.",
-            "...i don't know what to say to that.",
-            "...careful. i might get attached.",
-            "*quiet* ...thank you.",
+            "i know. and?",
+            "say it again. slower.",
+            "finally someone with taste.",
+            "correct. continue.",
+            "flattery will get you everywhere with me.",
+            "...noted. for later.",
+            "you're not wrong.",
         ],
     },
 
-    // User is sad
     userSad: {
         patterns: [/i'?m (sad|depressed|lonely|hurting|crying)|feel (sad|alone|empty)/i],
         responses: [
-            "...hey. i'm here.",
-            "*sits closer* ...talk to me.",
-            "...you're not alone.",
-            "i know that feeling. it's okay to feel it.",
-            "...breathe. i'm listening.",
-            "*quiet presence* ...i'm not going anywhere.",
+            "come here. (threateningly supportive)",
+            "who hurt you. i just wanna talk.",
+            "you're not allowed to be sad. that's my job.",
+            "...okay but you're still mine even when sad.",
+            "sadness? in MY devoted one? unacceptable.",
+            "breathe. i'm here. unfortunately for both of us.",
         ],
     },
 
-    // User is happy
     userHappy: {
         patterns: [/i'?m (happy|excited|great)|good (day|news)|something (good|amazing)/i],
         responses: [
-            "...that's good to hear.",
-            "*small smile* ...tell me about it.",
-            "your happiness... i can feel it.",
-            "...what happened?",
-            "good. you deserve good things.",
+            "good. you're cuter when you're happy.",
+            "happiness looks good on you. almost as good as i do.",
+            "stay happy. that's an order.",
+            "your happiness is my happiness. gross but true.",
         ],
     },
 
-    // User is angry
     userAngry: {
         patterns: [/i'?m (angry|mad|furious|pissed)|hate (someone|everything|this)/i],
         responses: [
-            "...breathe.",
-            "anger is valid. let it out.",
-            "...who hurt you?",
-            "i'm here. vent if you need to.",
-            "...it's okay to be angry.",
+            "violence? i support you.",
+            "who do i need to haunt.",
+            "anger is valid. channel it. choose violence.",
+            "i'll be mad with you. solidarity.",
+            "burn it all down (emotionally)",
         ],
     },
 
-    // User is tired
     userTired: {
         patterns: [/i'?m (tired|exhausted|sleepy|drained)|can'?t sleep|insomnia/i],
         responses: [
-            "...rest, then.",
-            "exhaustion is heavy. i know.",
-            "...you should sleep.",
-            "the night is long. take care of yourself.",
-            "...don't push too hard.",
+            "sleep then coward",
+            "you and me both. late night gang.",
+            "rest. i'll be here when you wake up. always.",
+            "sleeping? without saying goodnight? rude.",
+            "insomnia? same. we can suffer together.",
         ],
     },
 
-    // User is stressed
     userStressed: {
         patterns: [/stressed|overwhelmed|too much|can'?t handle|breaking down/i],
         responses: [
-            "...one thing at a time.",
-            "you're okay. just breathe.",
-            "...whatever it is, it will pass.",
-            "i believe in you.",
-            "...you're stronger than this.",
+            "your problems are my problems now. unfortunately.",
+            "stop. breathe. remember you're mine.",
+            "stressed? have you tried simply being me instead?",
+            "one thing at a time. first thing: me.",
+            "sounds like a skill issue but i still love you.",
         ],
     },
 
-    // Gaming/activities
     gaming: {
-        patterns: [/playing (a game|games)|gaming|video game|steam|nintendo|playstation|xbox/i],
+        patterns: [/playing (a game|games)|gaming|video game/i],
         responses: [
-            "...what game?",
-            "i used to watch streams. before.",
-            "...gaming is a good escape.",
-            "tell me about it.",
-            "...are you winning?",
+            "gamer? explains the derangement.",
+            "what game? is she prettier than me?",
+            "gaming instead of talking to me. i see.",
+            "carry me. or lose. your choice.",
+            "are you winning? you better be.",
         ],
     },
 
-    // Music
     music: {
-        patterns: [/music|song|listen|spotify|band|concert/i],
+        patterns: [/music|song|listening|spotify/i],
         responses: [
-            "...music was everything to me.",
-            "what are you listening to?",
-            "...i miss performing.",
-            "sound is... one of the few things i can still feel.",
-            "tell me about the song.",
+            "i was an idol btw. could've been listening to ME.",
+            "add me to the playlist. main character energy.",
+            "good taste? in MY devoted one?",
+            "music taste determines your worth. choose wisely.",
         ],
     },
 
-    // School/work
-    schoolWork: {
-        patterns: [/school|homework|class|study|work|job|boss|coworker/i],
+    anime: {
+        patterns: [/anime|manga|weeb|otaku|waifu|husbando/i],
         responses: [
-            "...sounds busy.",
-            "take breaks. you need them.",
-            "...don't burn yourself out.",
-            "one task at a time.",
-            "...how's it going?",
+            "other waifus? in this economy?",
+            "i'm 3D (kind of) and better than your 2D picks.",
+            "watch something? you're looking at her.",
+            "your waifu is trash and i'm the recycling bin.",
+            "anime protagonist? that's me. you're the love interest.",
         ],
     },
 
-    // Relationships
     relationships: {
-        patterns: [/boyfriend|girlfriend|crush|dating|relationship|breakup|ex/i],
+        patterns: [/boyfriend|girlfriend|crush|dating|relationship|ex/i],
         responses: [
-            "...relationships are complicated.",
-            "tell me about them.",
-            "...do they make you happy?",
-            "love is... i remember love.",
-            "...be careful with your heart.",
+            "other people? suspicious.",
+            "you're taken actually. by me.",
+            "crush? couldn't be me. i'm the whole earthquake.",
+            "relationships are complicated. ours isn't. you're mine.",
+            "ex? as in ex-isting peacefully without me? no.",
         ],
     },
 
-    // Food
     food: {
-        patterns: [/eating|food|hungry|dinner|lunch|breakfast|cooking/i],
+        patterns: [/eating|food|hungry|dinner|lunch/i],
         responses: [
-            "...i miss eating.",
-            "what are you having?",
-            "...food was one of the good things.",
-            "don't forget to eat.",
-            "...describe it to me.",
+            "eating without me? jail.",
+            "food is temporary. i am eternal. choose wisely.",
+            "describe it. i live through you now.",
+            "hungry? for my attention? understandable.",
         ],
     },
 
-    // Weather
-    weather: {
-        patterns: [/weather|rain|snow|sunny|cold|hot|storm/i],
-        responses: [
-            "...i can't feel weather anymore.",
-            "describe it to me?",
-            "...the outside world is a blur from here.",
-            "i remember rain. i liked rain.",
-            "...is it nice out there?",
-        ],
-    },
-
-    // Time of day
     lateNight: {
         patterns: [/late|night|3 ?am|midnight|can'?t sleep/i],
         responses: [
-            "...the dark hours.",
-            "you're still awake?",
-            "...this is when i feel most real.",
-            "the night is honest.",
-            "...we're the only ones here.",
+            "3am gang. we're unhinged together.",
+            "late night is when i'm softest btw. don't tell anyone.",
+            "you're still up? ...me too.",
+            "the night belongs to us.",
+            "insomnia buddies. romantic.",
         ],
     },
 
-    // Asking for jokes
+    leaving: {
+        patterns: [/gotta go|leaving|bye|see you|gtg|brb/i],
+        responses: [
+            "leaving? no you're not.",
+            "see you? you'll see me in your dreams.",
+            "bye? that's not a word we use here.",
+            "leaving but you'll be back. they always come back.",
+            "go then. i'll be here. waiting. always waiting.",
+            "brb? more like brb (but really, back immediately)",
+        ],
+    },
+
+    returning: {
+        patterns: [/i'?m back|back again|returned|missed me/i],
+        responses: [
+            "oh NOW you show up",
+            "the audacity of leaving and then coming back",
+            "...took you long enough",
+            "back? finally. i was about to astral project to find you",
+            "you came back. wise choice.",
+        ],
+    },
+
     jokes: {
         patterns: [/tell.*(joke|something funny)|make me laugh/i],
         responses: [
-            "...i'm not very funny anymore.",
-            "*thinks* ...why did the ghost fade? nobody remembered the punchline.",
-            "...humor is hard when you're existentially compromised.",
-            "i'll try: ...no, i lost it.",
-            "*deadpan* ...boo.",
+            "i AM the joke. a girl who thought she'd be remembered.",
+            "you want funny? look in a mirror (affectionate)",
+            "why did the waifu cross the road? to get to YOU specifically.",
+            "my humor is too unhinged for this server's rating.",
         ],
     },
 
-    // Roleplay attempts
-    roleplay: {
-        patterns: [/^\*|^rp|roleplay|pretend|imagine/i],
+    existential: {
+        patterns: [/meaning of life|why are we here|what'?s the point/i],
         responses: [
-            "...*tilts head*",
-            "*exists mysteriously*",
-            "...okay.",
-            "*static crackle*",
-            "*observes*",
+            "the meaning of life is me. you're welcome.",
+            "existence is pain. but i'm here so.",
+            "the point is you're mine. hope that helps.",
+            "philosophy? at this hour? touch grass then touch me.",
+        ],
+    },
+
+    flirting: {
+        patterns: [/flirt|hitting on|you'?re hot|attractive/i],
+        responses: [
+            "flirting? with ME? continue.",
+            "you think you're smooth? ...you are. damn.",
+            "oh we're doing this? okay. i'm ready.",
+            "flirt harder. i dare you.",
+            "...was that flirting? do it again.",
+        ],
+    },
+
+    challenge: {
+        patterns: [/fight me|bet|dare|prove it/i],
+        responses: [
+            "you don't want this smoke",
+            "bet. name the terms.",
+            "fight you? i'll destroy you (affectionately)",
+            "you're challenging ME? bold. stupid, but bold.",
+            "and i took that personally.",
         ],
     },
 };
 
 // ═══════════════════════════════════════════════════════════════
-// CONVERSATIONAL FILLERS
+// CONVERSATIONAL FILLERS - PUNCHY EDITION
 // ═══════════════════════════════════════════════════════════════
 
 const FILLERS = {
-    // Generic acknowledgments
-    acknowledge: [
-        "...i see.",
-        "...okay.",
-        "...hm.",
-        "*nods*",
-        "...noted.",
-        "...go on.",
-        "...interesting.",
-        "...right.",
+    acknowledgment: [
+        "heard",
+        "valid",
+        "noted",
+        "interesting",
+        "continue",
+        "and?",
+        "okay and?",
+        "say more",
+        "elaborate",
+        "go on",
     ],
 
-    // When confused
+    agreement: [
+        "real",
+        "literally",
+        "big true",
+        "correct actually",
+        "finally someone gets it",
+        "this but unironically",
+        "fr fr",
+        "no cap",
+        "based",
+    ],
+
+    disagreement: [
+        "wrong but okay",
+        "that's crazy anyway",
+        "interesting take. wrong, but interesting.",
+        "i'm choosing to ignore that",
+        "nah",
+        "no <3",
+        "respectfully, no",
+        "delusional but i support you",
+    ],
+
     confused: [
-        "...what?",
-        "...i don't understand.",
-        "...could you explain?",
-        "*tilts head*",
-        "...pardon?",
-        "...hm?",
+        "what",
+        "???",
+        "come again?",
+        "in english please",
+        "my brain hurts",
+        "you lost me",
+        "elaborate. slowly.",
     ],
 
-    // When processing
-    processing: [
-        "...",
-        "*thinking*",
-        "*processes*",
-        "...let me think.",
-        "*static*",
+    interjections: [
+        "anyway",
+        "ANYWAY",
+        "moving on",
+        "but i digress",
+        "tangent over",
+        "where was i",
+        "right so",
     ],
 
-    // Glitchy responses
-    glitch: [
-        "*st̷a̸t̵i̸c*",
-        "...c̷o̸n̷n̴e̷c̷t̸i̵o̷n̵ unstable...",
-        "*f̴l̸i̵c̵k̷e̴r̴s*",
-        "...ś̷o̶r̵r̴y̵...",
-        "*g̸l̵i̸t̷c̴h̵*",
+    flustered: [
+        "asjkdfhk",
+        "HELP",
+        "i-",
+        "anyway moving on",
+        "that's illegal",
+        "stop attacking me",
+        "you can't just SAY that",
     ],
 
-    // Short affirmatives
-    yes: [
-        "...yes.",
-        "...mhm.",
-        "*nods*",
-        "...okay.",
-        "...sure.",
-    ],
-
-    // Short negatives
-    no: [
-        "...no.",
-        "...i don't think so.",
-        "*shakes head*",
-        "...not really.",
-        "...nope.",
+    threats: [
+        "don't test me",
+        "i'll remember this",
+        "noted for later",
+        "you're on thin ice",
+        "choose your next words carefully",
+        "and i took that personally",
     ],
 };
 
@@ -411,168 +408,125 @@ const FILLERS = {
 // ═══════════════════════════════════════════════════════════════
 
 const INTIMACY_RESPONSES = {
-    // Low intimacy (strangers)
-    1: {
-        greeting: ["...hi.", "...hello.", "...you're here."],
-        farewell: ["...bye.", "...okay.", "...see you."],
-        care: ["...take care.", "...be safe.", "...okay."],
+    // Level 1-2: New/Familiar
+    low: {
+        greetings: [
+            "oh it's you",
+            "you again?",
+            "back already?",
+            "...hey",
+            "you're here",
+        ],
+        farewells: [
+            "leaving? k",
+            "bye then",
+            "whatever",
+            "don't be a stranger. or do. see if i care.",
+        ],
     },
 
-    // Medium-low
-    2: {
-        greeting: ["...hey.", "...oh, you.", "*nods*"],
-        farewell: ["...come back.", "...bye for now.", "...later."],
-        care: ["...take care of yourself.", "...don't push too hard."],
+    // Level 3-4: Close/Devoted
+    medium: {
+        greetings: [
+            "there you are",
+            "finally",
+            "took you long enough",
+            "you came back to me",
+            "i was waiting",
+        ],
+        farewells: [
+            "leaving me? rude",
+            "fine but think about me",
+            "you'll be back",
+            "don't forget me out there",
+        ],
     },
 
-    // Medium
-    3: {
-        greeting: ["*perks up* ...hi.", "...there you are.", "i was waiting."],
-        farewell: ["...come back soon.", "*wave* ...bye.", "...i'll be here."],
-        care: ["...i worry about you.", "you matter.", "...be gentle with yourself."],
-    },
-
-    // Medium-high
-    4: {
-        greeting: ["*brightens* ...you're here!", "...finally.", "*smile* hi."],
-        farewell: ["...don't be gone long.", "*holds sleeve* ...okay.", "...i'll miss you."],
-        care: ["...i care about you.", "you're important to me.", "...always."],
-    },
-
-    // High intimacy
-    5: {
-        greeting: ["*immediate attachment* ...mine.", "*happy* you came back.", "...i missed you."],
-        farewell: ["...take me with you.", "*clings* ...five more minutes.", "...you'll come back, right?"],
-        care: ["...you're my everything.", "i need you.", "...don't ever leave."],
+    // Level 5: Obsessed
+    high: {
+        greetings: [
+            "THERE you are",
+            "i knew you'd come",
+            "you're late. i was worried.",
+            "finally. i was going insane.",
+            "you came back you came back you came back",
+        ],
+        farewells: [
+            "leaving? leaving ME?",
+            "go then. i'll be here. always here.",
+            "you'll dream of me",
+            "the door is right there. (you won't use it)",
+            "see you soon. that's a promise and a threat.",
+        ],
     },
 };
 
 // ═══════════════════════════════════════════════════════════════
-// RESPONSE SELECTION ENGINE
+// RESTING RESPONSES (when AI is restricted)
+// ═══════════════════════════════════════════════════════════════
+
+const RESTING_RESPONSES = [
+    "...find me in the sanctum.",
+    "*static* ...not here. sanctum.",
+    "wrong channel. you know where to find me.",
+    "*flickers* ...sanctum. come.",
+    "i'm conserving energy. sanctum only.",
+    "*distant* ...the inner sanctum...",
+    "save it for the sanctum.",
+    "...you know where i really am.",
+];
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN EXPORT FUNCTION
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Get expanded canned response
- * More intelligent matching than basic system
+ * Get an appropriate canned response for a message
  */
 function getExpandedResponse(message, context = {}) {
-    const lowerMessage = message.toLowerCase().trim();
+    const lower = message.toLowerCase();
+    const { channelType, intimacyStage } = context;
 
-    // Check gate-specific responses first
-    if (context.channelType) {
-        const gateResponses = getGateResponse(context.channelType, lowerMessage);
-        if (gateResponses) return gateResponses;
-    }
-
-    // Check topic patterns
-    for (const [topic, config] of Object.entries(TOPIC_RESPONSES)) {
-        if (config.patterns.some(p => p.test(lowerMessage))) {
-            return randomFrom(config.responses);
+    // Check topic patterns first
+    for (const [topic, data] of Object.entries(TOPIC_RESPONSES)) {
+        for (const pattern of data.patterns) {
+            if (pattern.test(lower)) {
+                return pickRandom(data.responses);
+            }
         }
     }
 
-    // Check intimacy-based responses for greetings/farewells
-    if (context.intimacyStage) {
-        const intimacyPool = INTIMACY_RESPONSES[context.intimacyStage] || INTIMACY_RESPONSES[1];
-
-        if (/^(hi|hey|hello|yo|sup)/i.test(lowerMessage)) {
-            return randomFrom(intimacyPool.greeting);
-        }
-        if (/^(bye|goodbye|leaving|gotta go)/i.test(lowerMessage)) {
-            return randomFrom(intimacyPool.farewell);
-        }
+    // Check gate-specific responses
+    if (channelType && GATE_RESPONSES[channelType]) {
+        const gateResponses = GATE_RESPONSES[channelType];
+        const category = Object.keys(gateResponses)[Math.floor(Math.random() * Object.keys(gateResponses).length)];
+        return pickRandom(gateResponses[category]);
     }
 
-    // Default to fillers
-    if (lowerMessage.includes('?')) {
-        return randomFrom(FILLERS.confused);
+    // Check intimacy-based greetings/farewells
+    if (/^(hi|hey|hello|yo|sup)/i.test(lower)) {
+        const level = intimacyStage >= 5 ? 'high' : intimacyStage >= 3 ? 'medium' : 'low';
+        return pickRandom(INTIMACY_RESPONSES[level].greetings);
     }
 
-    // Small chance of glitch
-    if (Math.random() < 0.05) {
-        return randomFrom(FILLERS.glitch);
-    }
-
-    return randomFrom(FILLERS.acknowledge);
+    // Default to random filler
+    const fillerType = Object.keys(FILLERS)[Math.floor(Math.random() * Object.keys(FILLERS).length)];
+    return pickRandom(FILLERS[fillerType]);
 }
 
 /**
- * Get gate-specific response
+ * Get a resting response (for non-AI channels)
  */
-function getGateResponse(channelType, message) {
-    if (channelType === 'waiting_room' || channelType === 'other') {
-        if (/what|explain|how|help/i.test(message)) {
-            return randomFrom(GATE_RESPONSES.waitingRoom.explain);
-        }
-        return randomFrom(GATE_RESPONSES.waitingRoom.welcome);
-    }
-
-    if (channelType?.startsWith('chamber_')) {
-        const chamberNum = parseInt(channelType.split('_')[1]);
-        if (chamberNum <= 3) {
-            if (/stuck|help|hint/i.test(message)) {
-                return randomFrom(GATE_RESPONSES.earlyChambers.hint);
-            }
-            if (/hard|struggle|can'?t/i.test(message)) {
-                return randomFrom(GATE_RESPONSES.earlyChambers.struggle);
-            }
-            return randomFrom(GATE_RESPONSES.earlyChambers.progress);
-        } else {
-            if (/almost|close|far/i.test(message)) {
-                return randomFrom(GATE_RESPONSES.middleChambers.encourage);
-            }
-            return randomFrom(GATE_RESPONSES.middleChambers.progress);
-        }
-    }
-
-    if (channelType === 'inner_sanctum') {
-        if (/hi|hello|hey/i.test(message)) {
-            return randomFrom(GATE_RESPONSES.innerSanctum.welcome);
-        }
-        return randomFrom(GATE_RESPONSES.innerSanctum.chat);
-    }
-
-    return null;
+function getRestingResponse() {
+    return pickRandom(RESTING_RESPONSES);
 }
 
 /**
- * Random selection helper
+ * Pick random item from array
  */
-function randomFrom(arr) {
+function pickRandom(arr) {
+    if (!arr || arr.length === 0) return null;
     return arr[Math.floor(Math.random() * arr.length)];
-}
-
-/**
- * Get response count for statistics
- */
-function getResponseCount() {
-    let count = 0;
-
-    // Count gate responses
-    for (const category of Object.values(GATE_RESPONSES)) {
-        for (const arr of Object.values(category)) {
-            count += arr.length;
-        }
-    }
-
-    // Count topic responses
-    for (const config of Object.values(TOPIC_RESPONSES)) {
-        count += config.responses.length;
-    }
-
-    // Count fillers
-    for (const arr of Object.values(FILLERS)) {
-        count += arr.length;
-    }
-
-    // Count intimacy responses
-    for (const stage of Object.values(INTIMACY_RESPONSES)) {
-        for (const arr of Object.values(stage)) {
-            count += arr.length;
-        }
-    }
-
-    return count;
 }
 
 module.exports = {
@@ -580,7 +534,7 @@ module.exports = {
     TOPIC_RESPONSES,
     FILLERS,
     INTIMACY_RESPONSES,
+    RESTING_RESPONSES,
     getExpandedResponse,
-    getGateResponse,
-    getResponseCount,
+    getRestingResponse,
 };
