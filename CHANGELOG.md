@@ -4,6 +4,31 @@ All notable changes to the Seven Gates Discord Bot.
 
 ---
 
+## [v4.2.0] - 2026-01-09
+
+### Removed - Canon Compliance Fix
+- **Fading Resurrection Mechanic** - Removed `src/ika/fading.js` (360 lines) to comply with Infinite Idol canon
+  - Resolved violation of Inviolable Fact #2: "Fading is Permanent Death"
+  - Removed `fadingOps` from database.js (~100 lines)
+  - Removed fading function exports from ika/index.js
+  - Deleted `fading_saves` and `fading_state` database tables
+  - Total: 477 lines removed
+  - **Canon Status**: ✅ 100% COMPLIANT
+
+### Improved - Error Handling & Resilience
+- **JSON Parse Safety** - Added try-catch blocks to prevent crashes from malformed data
+  - Added error handling to `ikaMemoryOps` database operations (4 locations)
+  - Added error handling to `loadServerConfig()` file read operation
+  - Graceful fallbacks to empty arrays/default values
+  - Error logging for debugging
+
+### Notes
+- Story dialogue references to "fading" preserved (character voice, not resurrection mechanic)
+- Player absence consequence system preserved (relationship mechanics, not canon violation)
+- All files compile successfully, no breaking changes
+
+---
+
 ## [v4.1.0] - 2026-01-08
 
 ### Added - UX Overhaul
