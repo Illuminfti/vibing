@@ -32,7 +32,6 @@ const unprompted = require('./unprompted');
 const presenceAwareness = require('./presenceAwareness');
 const whisperHunt = require('./whisperHunt');
 const anniversaries = require('./anniversaries');
-const fading = require('./fading');
 const names = require('./names');
 const handwriting = require('./handwriting');
 
@@ -179,15 +178,6 @@ module.exports = {
     sendAnniversaryMessage: anniversaries.sendAnniversaryMessage,
     runDailyAnniversaryCheck: anniversaries.runDailyAnniversaryCheck,
     getUpcomingAnniversaries: anniversaries.getUpcomingAnniversaries,
-
-    // Fading/Save Mechanic
-    calculateFadingStage: fading.calculateFadingStage,
-    getFadingUsers: fading.getFadingUsers,
-    getFadingMessage: fading.getFadingMessage,
-    saveUser: fading.saveUser,
-    checkSaveAttempt: fading.checkSaveAttempt,
-    runFadingCheck: fading.runFadingCheck,
-    getSaveStats: fading.getSaveStats,
 
     // Real Name Learning
     handleNameLearning: names.handleNameLearning,

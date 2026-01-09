@@ -257,26 +257,6 @@ db.exec(`
         UNIQUE(user_id, anniversary_type, days_count)
     );
 
-    -- Fading/save mechanics
-    CREATE TABLE IF NOT EXISTS fading_saves (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        fading_user_id TEXT,
-        saved_by_user_id TEXT,
-        save_type TEXT,
-        saved_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- Fading state tracking
-    CREATE TABLE IF NOT EXISTS fading_state (
-        user_id TEXT PRIMARY KEY,
-        fading_stage INTEGER DEFAULT 0,
-        last_interaction DATETIME,
-        warning_sent INTEGER DEFAULT 0,
-        fading_started_at DATETIME,
-        saved_at DATETIME,
-        saved_by TEXT
-    );
-
     -- Presence events tracking
     CREATE TABLE IF NOT EXISTS presence_events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -390,9 +370,6 @@ db.exec(`
     -- DM tracking indexes
     CREATE INDEX IF NOT EXISTS idx_dm_log_user ON dm_log(user_id, timestamp);
     CREATE INDEX IF NOT EXISTS idx_dm_prefs_enabled ON dm_preferences(unprompted_enabled);
-
-    -- Fading indexes
-    CREATE INDEX IF NOT EXISTS idx_fading_active ON fading_state(last_interaction);
 `);
 
 // ═══════════════════════════════════════════════════════════════
@@ -1445,90 +1422,6 @@ const anniversaryOps = {
     },
 };
 
-// Fading/save mechanics operations
-const fadingOps = {
-    // Get or create fading state
-    getOrCreate(userId) {
-        const existing = db.prepare('SELECT * FROM fading_state WHERE user_id = ?').get(userId);
-        if (existing) return existing;
-
-        db.prepare(`
-            INSERT INTO fading_state (user_id, last_interaction)
-            VALUES (?, CURRENT_TIMESTAMP)
-        `).run(userId);
-        return db.prepare('SELECT * FROM fading_state WHERE user_id = ?').get(userId);
-    },
-
-    // Update interaction
-    updateInteraction(userId) {
-        db.prepare(`
-            UPDATE fading_state
-            SET last_interaction = CURRENT_TIMESTAMP, fading_stage = 0, warning_sent = 0
-            WHERE user_id = ?
-        `).run(userId);
-    },
-
-    // Get users who are fading (no interaction for X days)
-    getFadingUsers(daysThreshold = 7) {
-        const threshold = new Date(Date.now() - daysThreshold * 24 * 60 * 60 * 1000).toISOString();
-        return db.prepare(`
-            SELECT fs.*, im.username, im.intimacy_stage
-            FROM fading_state fs
-            JOIN ika_memory im ON fs.user_id = im.user_id
-            WHERE fs.last_interaction < ?
-            AND fs.saved_at IS NULL
-            AND im.intimacy_stage >= 2
-        `).all(threshold);
-    },
-
-    // Update fading stage
-    setFadingStage(userId, stage) {
-        db.prepare(`
-            UPDATE fading_state
-            SET fading_stage = ?,
-                fading_started_at = CASE WHEN ? > 0 AND fading_started_at IS NULL THEN CURRENT_TIMESTAMP ELSE fading_started_at END
-            WHERE user_id = ?
-        `).run(stage, stage, userId);
-    },
-
-    // Mark warning sent
-    markWarningSent(userId) {
-        db.prepare('UPDATE fading_state SET warning_sent = 1 WHERE user_id = ?').run(userId);
-    },
-
-    // Save a fading user
-    saveUser(fadingUserId, savedByUserId, saveType) {
-        // Log the save
-        db.prepare(`
-            INSERT INTO fading_saves (fading_user_id, saved_by_user_id, save_type)
-            VALUES (?, ?, ?)
-        `).run(fadingUserId, savedByUserId, saveType);
-
-        // Update fading state
-        db.prepare(`
-            UPDATE fading_state
-            SET saved_at = CURRENT_TIMESTAMP, saved_by = ?, fading_stage = 0
-            WHERE user_id = ?
-        `).run(savedByUserId, fadingUserId);
-    },
-
-    // Get save count for a user (how many times they've been saved)
-    getSaveCount(userId) {
-        return db.prepare(`
-            SELECT COUNT(*) as count FROM fading_saves
-            WHERE fading_user_id = ?
-        `).get(userId).count;
-    },
-
-    // Get how many users someone has saved
-    getHeroCount(userId) {
-        return db.prepare(`
-            SELECT COUNT(*) as count FROM fading_saves
-            WHERE saved_by_user_id = ?
-        `).get(userId).count;
-    },
-};
-
 // Presence tracking operations
 const presenceOps = {
     // Log presence event
@@ -1917,7 +1810,6 @@ module.exports = {
     unpromptedDmOps,
     whisperOps,
     anniversaryOps,
-    fadingOps,
     presenceOps,
     dmCooldownOps,
     nameOps,
