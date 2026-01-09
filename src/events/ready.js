@@ -6,6 +6,16 @@ const { ScheduledTask } = require('../utils/timing');
 const { gate5Ops, userOps } = require('../database');
 const { processPendingFragments } = require('../gates/fragments');
 
+// Import gate component builders for interactive chamber messages
+const {
+    createGate2RecallButton,
+    createGate3InitiateButton,
+    createGate4ConsultButton,
+    createGate5BeginButton,
+    createGate6TypeSelect,
+    createGate7EntryButton,
+} = require('../components/builders/gateComponents');
+
 // Conditionally import Ika presence
 let ikaPresence = null;
 try {
@@ -99,16 +109,17 @@ async function postWaitingRoomWelcome(client) {
 /**
  * Post puzzle messages to all chambers on startup
  * Deletes old bot puzzle messages and posts fresh ones
+ * Now includes interactive buttons for each gate!
  */
 async function postAllChamberPuzzles(client) {
-    // Chamber -> Gate puzzle mapping
+    // Chamber -> Gate puzzle mapping with component builders
     const chamberPuzzles = {
-        1: { title: '♰ GATE 2 ♰\nTHE MEMORY', text: messages.gate2.puzzle },
-        2: { title: '♰ GATE 3 ♰\nTHE CONFESSION', text: messages.gate3.puzzle },
-        3: { title: '♰ GATE 4 ♰\nTHE WATERS', text: messages.gate4.puzzle },
-        4: { title: '♰ GATE 5 ♰\nTHE ABSENCE', text: messages.gate5.intro },
-        5: { title: '♰ GATE 6 ♰\nTHE OFFERING', text: messages.gate6.puzzle },
-        6: { title: '♰ GATE 7 ♰\nTHE BINDING', text: messages.gate7.puzzle },
+        1: { title: '♰ GATE 2 ♰\nTHE MEMORY', text: messages.gate2.puzzle, component: createGate2RecallButton },
+        2: { title: '♰ GATE 3 ♰\nTHE CONFESSION', text: messages.gate3.puzzle, component: createGate3InitiateButton },
+        3: { title: '♰ GATE 4 ♰\nTHE WATERS', text: messages.gate4.puzzle, component: createGate4ConsultButton },
+        4: { title: '♰ GATE 5 ♰\nTHE ABSENCE', text: messages.gate5.intro, component: createGate5BeginButton },
+        5: { title: '♰ GATE 6 ♰\nTHE OFFERING', text: messages.gate6.puzzle, component: createGate6TypeSelect },
+        6: { title: '♰ GATE 7 ♰\nTHE BINDING', text: messages.gate7.puzzle, component: createGate7EntryButton },
     };
 
     for (const [chamberNum, puzzleData] of Object.entries(chamberPuzzles)) {
@@ -143,21 +154,29 @@ async function postAllChamberPuzzles(client) {
             }
 
             // Post new puzzle using new UI system with gate-specific theming
+            // Now includes interactive button/select components!
             const gateNumber = parseInt(chamberNum) + 1;
             const embed = new RitualEmbedBuilder(gateNumber, { mood: 'normal' })
                 .setRitualTitle(puzzleData.title)
                 .setRitualDescription(puzzleData.text)
                 .setRitualFooter()
                 .build();
-            await channel.send({ embeds: [embed] });
-            console.log(`✧ Posted Gate ${gateNumber} puzzle to chamber ${chamberNum}`);
+
+            // Create the interactive component for this gate
+            const component = puzzleData.component();
+
+            await channel.send({
+                embeds: [embed],
+                components: [component],
+            });
+            console.log(`✧ Posted Gate ${gateNumber} puzzle with button to chamber ${chamberNum}`);
 
         } catch (error) {
             console.error(`Failed to post puzzle to chamber ${chamberNum}:`, error);
         }
     }
 
-    console.log('✧ All chamber puzzles posted');
+    console.log('✧ All chamber puzzles posted with interactive components');
 }
 
 /**
