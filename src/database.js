@@ -750,9 +750,16 @@ const ikaMemoryOps = {
     getOrCreate(userId, username) {
         const existing = db.prepare('SELECT * FROM ika_memory WHERE user_id = ?').get(userId);
         if (existing) {
-            existing.remembered_facts = JSON.parse(existing.remembered_facts || '[]');
-            existing.inside_jokes = JSON.parse(existing.inside_jokes || '[]');
-            existing.notable_moments = JSON.parse(existing.notable_moments || '[]');
+            try {
+                existing.remembered_facts = JSON.parse(existing.remembered_facts || '[]');
+                existing.inside_jokes = JSON.parse(existing.inside_jokes || '[]');
+                existing.notable_moments = JSON.parse(existing.notable_moments || '[]');
+            } catch (e) {
+                console.error(`Failed to parse ika_memory JSON for ${userId}:`, e);
+                existing.remembered_facts = [];
+                existing.inside_jokes = [];
+                existing.notable_moments = [];
+            }
             return existing;
         }
 
@@ -765,9 +772,16 @@ const ikaMemoryOps = {
         const memory = db.prepare('SELECT * FROM ika_memory WHERE user_id = ?').get(userId);
         if (!memory) return null;
 
-        memory.remembered_facts = JSON.parse(memory.remembered_facts || '[]');
-        memory.inside_jokes = JSON.parse(memory.inside_jokes || '[]');
-        memory.notable_moments = JSON.parse(memory.notable_moments || '[]');
+        try {
+            memory.remembered_facts = JSON.parse(memory.remembered_facts || '[]');
+            memory.inside_jokes = JSON.parse(memory.inside_jokes || '[]');
+            memory.notable_moments = JSON.parse(memory.notable_moments || '[]');
+        } catch (e) {
+            console.error(`Failed to parse ika_memory JSON for ${userId}:`, e);
+            memory.remembered_facts = [];
+            memory.inside_jokes = [];
+            memory.notable_moments = [];
+        }
         return memory;
     },
 
@@ -906,9 +920,16 @@ const ikaMemoryOps = {
             ORDER BY RANDOM()
             LIMIT 10
         `).all().map(m => {
-            m.remembered_facts = JSON.parse(m.remembered_facts || '[]');
-            m.inside_jokes = JSON.parse(m.inside_jokes || '[]');
-            m.notable_moments = JSON.parse(m.notable_moments || '[]');
+            try {
+                m.remembered_facts = JSON.parse(m.remembered_facts || '[]');
+                m.inside_jokes = JSON.parse(m.inside_jokes || '[]');
+                m.notable_moments = JSON.parse(m.notable_moments || '[]');
+            } catch (e) {
+                console.error(`Failed to parse devotee memory JSON:`, e);
+                m.remembered_facts = [];
+                m.inside_jokes = [];
+                m.notable_moments = [];
+            }
             return m;
         });
     },
@@ -1231,7 +1252,13 @@ const ikaMemoryExtOps = {
     // Get and update growth milestones
     getGrowthMilestones(userId) {
         const row = db.prepare('SELECT growth_milestones_hit FROM ika_memory WHERE user_id = ?').get(userId);
-        return row ? JSON.parse(row.growth_milestones_hit || '[]') : [];
+        if (!row) return [];
+        try {
+            return JSON.parse(row.growth_milestones_hit || '[]');
+        } catch (e) {
+            console.error(`Failed to parse growth_milestones_hit for ${userId}:`, e);
+            return [];
+        }
     },
 
     addGrowthMilestone(userId, milestone) {

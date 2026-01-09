@@ -546,7 +546,12 @@ function loadServerConfig(guildId) {
     const configPath = path.join(process.cwd(), 'data', 'servers', `${guildId}.json`);
 
     if (fs.existsSync(configPath)) {
-        return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        try {
+            return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        } catch (e) {
+            console.error(`Failed to load server config for ${guildId}:`, e);
+            return null;
+        }
     }
 
     return null;
