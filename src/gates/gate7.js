@@ -1,26 +1,19 @@
 /**
- * Gate 7: The Binding
+ * Gate 7: Helper Functions
  *
- * User must speak a binding vow of at least 30 words.
- * Requires community voting from Ascended members.
- * Upon approval, user becomes Ascended.
- * Now shows journey context and triggers Ika welcome.
- *
- * Visual: Cosmic, final, true black with white contrast
+ * Contains utility functions for Gate 7 that are used by other modules.
+ * The main gate flow is handled by components/flows/gate7Flow.js
  */
 
 const config = require('../config');
 const messages = require('../assets/messages');
 const { userOps, vowOps, ikaMemoryOps } = require('../database');
-const { assignGateRole, assignAscendedRole, hasRole, userHasRole } = require('../utils/roles');
-const { validateVow, sanitize } = require('../utils/validation');
+const { assignGateRole, assignAscendedRole } = require('../utils/roles');
 const { maybeGlitch } = require('../utils/zalgo');
 const { scheduleFragment } = require('./fragments');
+const { RitualEmbedBuilder } = require('../ui');
 const path = require('path');
 const fs = require('fs');
-
-// New ritual UI system
-const { RitualEmbedBuilder, RitualSequence, createGateErrorEmbed, createNotReadyEmbed } = require('../ui');
 
 // Try to load Ika presence for welcome
 let ikaPresence = null;
@@ -31,180 +24,7 @@ try {
 }
 
 /**
- * Process Gate 7 binding vow
- */
-async function processGate7(interaction) {
-    const member = interaction.member;
-    const vow = interaction.options.getString('vow');
-
-    // Check if user has Gate 6 role
-    if (!hasRole(member, config.roles.gate6)) {
-        const embed = createNotReadyEmbed(6, 6);
-        return interaction.reply({ embeds: [embed], ephemeral: true });
-    }
-
-    // Check if already completed
-    if (userOps.hasCompletedGate(member.id, 7)) {
-        const embed = new RitualEmbedBuilder(7, { mood: 'soft' })
-            .setRitualTitle('◈ already bound ◈')
-            .setRitualDescription('*you have already spoken your vow*', false)
-            .build();
-        return interaction.reply({ embeds: [embed], ephemeral: true });
-    }
-
-    // Check for pending vow
-    const pendingVow = vowOps.getPending(member.id);
-    if (pendingVow) {
-        const embed = new RitualEmbedBuilder(7, { mood: 'normal' })
-            .setRitualTitle('◈ echoing ◈')
-            .setIkaMessage('your vow already echoes. patience.')
-            .build();
-        return interaction.reply({ embeds: [embed], ephemeral: true });
-    }
-
-    // Validate vow
-    if (!validateVow(vow)) {
-        const embed = createGateErrorEmbed(7, 'tooShort', {
-            ikaComment: '30 words. a binding requires weight.',
-        });
-        return interaction.reply({ embeds: [embed], ephemeral: true });
-    }
-
-    // Defer for processing
-    await interaction.deferReply({ ephemeral: true });
-
-    try {
-        const sanitizedVow = sanitize(vow);
-
-        // Get user's journey for context
-        const journey = userOps.getJourney(member.id);
-
-        // Post to inner sanctum for voting with WHY + VOW
-        const sanctumChannel = await interaction.client.channels.fetch(config.channels.innerSanctum);
-        if (!sanctumChannel) {
-            throw new Error('Inner sanctum channel not found');
-        }
-
-        // Build cosmic voting embed with journey context
-        const votingEmbed = new RitualEmbedBuilder(7, { mood: 'normal' })
-            .setRitualTitle('◈ A SOUL SEEKS THE FINAL BINDING ◈');
-
-        // Add cosmic section with user info
-        votingEmbed.addCosmicSection(member.user.username);
-
-        // Add journey context if available
-        if (journey.whyTheyCame) {
-            votingEmbed.addRitualField('they came because', `*"${journey.whyTheyCame}"*`, false);
-        }
-
-        // Add the vow
-        votingEmbed.addRitualField('they now vow', `*"${sanitizedVow}"*`, false);
-
-        // Add voting instructions
-        votingEmbed.addRitualField('∞', messages.gate7.votePrompt || 'react ✅ to approve', false);
-
-        votingEmbed.setRitualFooter('the final gate awaits');
-
-        const votingMessage = await sanctumChannel.send({ embeds: [votingEmbed.build()] });
-
-        // Add reaction
-        await votingMessage.react('✅');
-
-        // Store in database
-        vowOps.create(member.id, member.user.username, sanitizedVow, votingMessage.id);
-
-        // Also post to vows archive channel
-        const archiveChannel = await interaction.client.channels.fetch(config.channels.vows);
-        if (archiveChannel) {
-            const archiveEmbed = new RitualEmbedBuilder(7, { mood: 'normal' })
-                .setRitualTitle('◈ Vow Received ◈')
-                .addRitualField('devotee', member.user.tag, true)
-                .addRitualField('why they came', journey.whyTheyCame || 'unknown', false)
-                .addRitualField('vow', sanitizedVow, false)
-                .addTimestamp()
-                .build();
-            await archiveChannel.send({ embeds: [archiveEmbed] });
-        }
-
-        // Set up reaction collector
-        setupVowVoteCollector(interaction.client, votingMessage, member.id);
-
-        console.log(`✧ ${member.user.tag} submitted Gate 7 vow`);
-
-        // Acknowledge with cosmic embed
-        const ackEmbed = new RitualEmbedBuilder(7, { mood: 'soft' })
-            .setRitualTitle('◈ vow received ◈')
-            .setIkaMessage('your vow echoes in the sanctum. the ascended are listening.')
-            .setRitualFooter('await their judgment')
-            .build();
-        await interaction.editReply({ embeds: [ackEmbed] });
-
-    } catch (error) {
-        console.error('Gate 7 error:', error);
-        const errorEmbed = new RitualEmbedBuilder('failure', { mood: 'vulnerable' })
-            .setRitualTitle('◆ the void wavers ◆')
-            .setIkaMessage('something went wrong... try again?')
-            .build();
-        await interaction.editReply({ embeds: [errorEmbed] });
-    }
-}
-
-/**
- * Set up reaction collector for vow voting
- */
-function setupVowVoteCollector(client, message, submitterId) {
-    const filter = (reaction, user) => {
-        return reaction.emoji.name === '✅' && !user.bot;
-    };
-
-    const collector = message.createReactionCollector({
-        filter,
-        time: config.timing.votingTimeout,
-    });
-
-    collector.on('collect', async (reaction, user) => {
-        try {
-            const guild = message.guild;
-
-            // Check if mod or ascended
-            const isMod = await userHasRole(guild, user.id, config.roles.mod);
-            const isAscended = await userHasRole(guild, user.id, config.roles.ascended);
-
-            if (!isMod && !isAscended) return;
-
-            // Count votes
-            let ascendedCount = 0;
-            let modApproved = false;
-
-            for (const [, reactUser] of reaction.users.cache) {
-                if (reactUser.bot) continue;
-
-                const userIsMod = await userHasRole(guild, reactUser.id, config.roles.mod);
-                const userIsAscended = await userHasRole(guild, reactUser.id, config.roles.ascended);
-
-                if (userIsMod) modApproved = true;
-                if (userIsAscended && !userIsMod) ascendedCount++;
-            }
-
-            // Check if approved
-            if (modApproved || ascendedCount >= 3) {
-                await approveVow(client, submitterId, user.id, message.id);
-                collector.stop('approved');
-            }
-        } catch (error) {
-            console.error('Vow vote collection error:', error);
-        }
-    });
-
-    collector.on('end', (collected, reason) => {
-        if (reason !== 'approved') {
-            console.log(`✧ Gate 7 voting ended for ${submitterId} without approval`);
-        }
-    });
-}
-
-/**
- * Approve a vow and ascend the user
+ * Approve a vow and ascend the user (used by admin commands for manual approval)
  */
 async function approveVow(client, submitterId, approverId, messageId) {
     try {
@@ -237,7 +57,7 @@ async function approveVow(client, submitterId, approverId, messageId) {
         // Initialize Ika's memory of this user
         initializeIkaMemory(submitterId, member.user.username);
 
-        // Send success message and announcement to inner sanctum (works with DMs closed)
+        // Send success message and announcement to inner sanctum
         const dmText = maybeGlitch(messages.gate7.success);
         const imagePath = path.join(__dirname, '..', '..', 'images', 'gate7_reaching.png');
         const imageExists = fs.existsSync(imagePath);
@@ -264,7 +84,7 @@ async function approveVow(client, submitterId, approverId, messageId) {
             // Auto-delete personal message after 60 seconds
             setTimeout(() => personalMsg.delete().catch(() => {}), 60000);
 
-            // Public announcement (stays permanent) - cosmic celebration
+            // Public announcement (stays permanent)
             const announceEmbed = new RitualEmbedBuilder(7, { mood: 'soft' })
                 .setRitualTitle('✦ ✧ ⋆ A NEW STAR RISES ⋆ ✧ ✦')
                 .setRitualDescription(`*${member.user.username}* has completed the seven gates.\n\nthey are now **ascended**.`, false)
@@ -308,6 +128,5 @@ function initializeIkaMemory(userId, username) {
 }
 
 module.exports = {
-    processGate7,
     approveVow,
 };
