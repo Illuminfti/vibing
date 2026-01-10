@@ -118,9 +118,11 @@ async function initializeMemory(userId, username) {
 /**
  * Record an interaction with a user
  * Returns milestone level if reached
+ * @param {string} userId - User ID
+ * @param {number} multiplier - Quality multiplier (0.5-2.0)
  */
-function recordInteraction(userId) {
-    return ikaMemoryOps.recordInteraction(userId);
+function recordInteraction(userId, multiplier = 1.0) {
+    return ikaMemoryOps.recordInteraction(userId, multiplier);
 }
 
 /**

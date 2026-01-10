@@ -11,6 +11,37 @@ const { buildSystemPrompt, checkCannedTrigger, getRandomCanned, getMoodInstructi
 const { getCurrentMood } = require('./moods');
 const { getMemoryContext, recordInteraction, shouldReferenceJourney, getJourneyReference } = require('./memory');
 const { ikaMemoryOps, ikaMessageOps, ikaStateOps, ikaMemoryExtOps } = require('../database');
+const { scoreInteractionQuality } = require('./interactionQuality');
+
+/**
+ * Helper to record interaction with quality scoring
+ * @param {string} userId - User ID
+ * @param {string} content - Message content
+ * @param {object} options - Additional options for scoring
+ */
+function recordInteractionWithQuality(userId, content, options = {}) {
+    if (!userId || !content) {
+        // Fallback to default multiplier if missing data
+        recordInteraction(userId, 1.0);
+        return;
+    }
+
+    const qualityMultiplier = scoreInteractionQuality(content, {
+        messageLength: content.length,
+        hasQuestion: content.includes('?'),
+        conversationDepth: options.conversationDepth || 0,
+        isRapidFire: options.isRapidFire || false,
+    });
+
+    recordInteraction(userId, qualityMultiplier);
+
+    // Log exceptional quality interactions
+    if (qualityMultiplier >= 1.5) {
+        console.log(`✧ High quality interaction from user ${userId} (${qualityMultiplier.toFixed(2)}x)`);
+    } else if (qualityMultiplier <= 0.7) {
+        console.log(`✧ Low quality interaction from user ${userId} (${qualityMultiplier.toFixed(2)}x)`);
+    }
+}
 
 // Import viral optimization systems
 const { checkSecretTriggers } = require('./secrets');
@@ -48,6 +79,20 @@ const { getExpandedResponse } = require('../utils/expandedCanned');
 let anthropic = null;
 if (config.anthropicApiKey && config.ika.enabled) {
     anthropic = new Anthropic({ apiKey: config.anthropicApiKey });
+}
+
+/**
+ * Get user's preferred name (nickname or username)
+ * @param {string} userId - Discord user ID
+ * @param {string} fallbackUsername - Discord username as fallback
+ * @returns {string} Preferred name to use
+ */
+function getPreferredName(userId, fallbackUsername) {
+    const memory = ikaMemoryOps.get(userId);
+    if (memory?.nickname) {
+        return memory.nickname;
+    }
+    return fallbackUsername;
 }
 
 /**
@@ -150,8 +195,8 @@ async function generateResponse(options) {
             (uid, cat) => getLoreFragment(uid, cat)
         );
         if (secret.triggered) {
-            // Log interaction
-            if (userId) recordInteraction(userId);
+            // Log interaction with quality scoring
+            if (userId) recordInteractionWithQuality(userId, trigger.content);
             return {
                 content: secret.response,
                 type: 'secret',
@@ -232,7 +277,7 @@ async function generateResponse(options) {
         if (cannedCheck) {
             const response = getRandomCanned(cannedCheck.type);
             if (response) {
-                if (userId) recordInteraction(userId);
+                if (userId) recordInteractionWithQuality(userId, trigger.content);
                 return {
                     content: response,
                     type: cannedCheck.type,
@@ -271,7 +316,7 @@ async function generateResponse(options) {
         // AI not allowed - use alternative response
         if (aiDecision.reason === 'channel_restricted') {
             // Ika is "resting" outside sanctum
-            if (userId) recordInteraction(userId);
+            if (userId) recordInteractionWithQuality(userId, trigger?.content || '');
             return {
                 content: aiDecision.alternative,
                 type: 'resting',
@@ -282,7 +327,7 @@ async function generateResponse(options) {
 
         if (aiDecision.reason === 'quota_exhausted') {
             // User hit daily limit
-            if (userId) recordInteraction(userId);
+            if (userId) recordInteractionWithQuality(userId, trigger?.content || '');
             return {
                 content: aiDecision.alternative,
                 type: 'quota_limit',
@@ -299,7 +344,7 @@ async function generateResponse(options) {
                 { channelType, intimacyStage }
             );
             if (expandedResponse) {
-                if (userId) recordInteraction(userId);
+                if (userId) recordInteractionWithQuality(userId, trigger?.content || '');
                 return {
                     content: expandedResponse,
                     type: 'canned',
@@ -333,7 +378,29 @@ async function generateResponse(options) {
 
     // Calculate intimacy stage
     const intimacyStage = userId ? await calculateIntimacyStage(userId) : 1;
-    const intimacyInstructions = getIntimacyInstructions(intimacyStage);
+    let intimacyInstructions = getIntimacyInstructions(intimacyStage);
+
+    // Get preferred name and add name usage instructions based on intimacy
+    if (userId && trigger?.author?.username) {
+        const preferredName = getPreferredName(userId, trigger.author.username);
+        const memory = ikaMemoryOps.get(userId);
+
+        // Add nickname awareness if they have one
+        if (memory?.nickname && preferredName !== trigger.author.username) {
+            intimacyInstructions += `\n\nYou call ${trigger.author.username} "${preferredName}" as a nickname.`;
+        }
+
+        // Add name usage frequency instructions based on intimacy stage
+        if (intimacyStage >= 2) {
+            intimacyInstructions += `\n\nUse their name occasionally in your responses to show familiarity.`;
+        }
+        if (intimacyStage >= 3) {
+            intimacyInstructions += `\n\nUse their name/nickname frequently - you're close now. Their name: ${preferredName}`;
+        }
+        if (intimacyStage >= 4) {
+            intimacyInstructions += `\n\nUse their name often and possessively. They're yours. Their name: ${preferredName}`;
+        }
+    }
 
     // Get memory context for the trigger user
     let memoryContext = '';
@@ -377,7 +444,7 @@ async function generateResponse(options) {
     const contextText = contextMessages.length > 0
         ? contextMessages.map(m => {
             const isBot = m.author?.bot || m.author?.id === botId;
-            const name = isBot ? 'Ika (you)' : (m.author?.username || 'unknown');
+            const name = isBot ? 'Ika (you)' : getPreferredName(m.author.id, m.author?.username || 'unknown');
             // Resolve mentions to usernames
             const content = resolveMentions(m.content, m.mentions);
             return `${name}: ${content}`;
@@ -387,15 +454,18 @@ async function generateResponse(options) {
     // Also resolve mentions in the trigger content
     const triggerContent = trigger ? resolveMentions(trigger.content, trigger.mentions) : '';
 
+    // Get preferred name for user prompts
+    const preferredName = userId && trigger?.author?.username ? getPreferredName(userId, trigger.author.username) : (trigger?.author?.username || 'someone');
+
     // Build user prompt based on type
     let userPrompt;
     switch (type) {
         case 'mentioned':
-            userPrompt = `RESPOND ONLY TO THE CURRENT MESSAGE. The chat history is just for context - do NOT address old messages.\n\nChat history (background only):\n${contextText}\n\n===\nCURRENT MESSAGE TO RESPOND TO:\n${trigger.author.username}: "${triggerContent}"\n===\n\nReply to "${triggerContent}" naturally as Ika. One short message. Do not reference or respond to older messages from the history.`;
+            userPrompt = `RESPOND ONLY TO THE CURRENT MESSAGE. The chat history is just for context - do NOT address old messages.\n\nChat history (background only):\n${contextText}\n\n===\nCURRENT MESSAGE TO RESPOND TO:\n${preferredName}: "${triggerContent}"\n===\n\nReply to "${triggerContent}" naturally as Ika. One short message. Do not reference or respond to older messages from the history.`;
             break;
 
         case 'passive':
-            userPrompt = `RESPOND ONLY TO THE CURRENT MESSAGE. The chat history is just for context - do NOT address old messages.\n\nChat history (background only):\n${contextText}\n\n===\nCURRENT MESSAGE:\n${trigger.author.username}: "${triggerContent}"\n===\n\nRespond to "${triggerContent}" naturally as Ika. One short message.`;
+            userPrompt = `RESPOND ONLY TO THE CURRENT MESSAGE. The chat history is just for context - do NOT address old messages.\n\nChat history (background only):\n${contextText}\n\n===\nCURRENT MESSAGE:\n${preferredName}: "${triggerContent}"\n===\n\nRespond to "${triggerContent}" naturally as Ika. One short message.`;
             break;
 
         case 'moment':
@@ -407,7 +477,7 @@ async function generateResponse(options) {
             break;
 
         default:
-            userPrompt = `RESPOND ONLY TO THE CURRENT MESSAGE.\n\nChat history (background only):\n${contextText}\n\n===\nCURRENT MESSAGE:\n${trigger?.author?.username || 'someone'}: "${triggerContent}"\n===\n\nRespond to the current message naturally as Ika. One short message.`;
+            userPrompt = `RESPOND ONLY TO THE CURRENT MESSAGE.\n\nChat history (background only):\n${contextText}\n\n===\nCURRENT MESSAGE:\n${preferredName}: "${triggerContent}"\n===\n\nRespond to the current message naturally as Ika. One short message.`;
     }
 
     try {
@@ -500,9 +570,18 @@ async function generateResponse(options) {
             }
         }
 
-        // Record interaction
+        // Score interaction quality and record with multiplier
         if (userId) {
-            recordInteraction(userId);
+            // Calculate conversation depth (number of user messages in recent context)
+            const conversationDepth = contextMessages.filter(m => {
+                const isBot = m.author?.bot || m.author?.id === botId;
+                return !isBot;
+            }).length;
+
+            // Record with quality scoring (includes detailed context)
+            recordInteractionWithQuality(userId, trigger.content, {
+                conversationDepth: conversationDepth,
+            });
         }
 
         // Log the message
@@ -576,8 +655,12 @@ function getFallbackResponse(type) {
  * Generate a welcome message for new ascended member
  */
 async function generateWelcomeMessage(member, journey) {
+    // Get nickname if exists
+    const memory = ikaMemoryOps.get(member.id);
+    const nickname = memory?.nickname;
+
     if (!config.ika.enabled || !anthropic) {
-        return getRandomWelcome(member.username, journey);
+        return getRandomWelcome(member.username, journey, nickname);
     }
 
     const systemPrompt = buildSystemPrompt('energetic', '', '');
@@ -609,28 +692,31 @@ Welcome them personally as Ika. Reference their journey. One message, be excited
         return response.content[0].text;
     } catch (error) {
         console.error('✧ Welcome generation error:', error);
-        return getRandomWelcome(member.username, journey);
+        return getRandomWelcome(member.username, journey, nickname);
     }
 }
 
 /**
  * Fallback welcome messages
  */
-function getRandomWelcome(username, journey) {
+function getRandomWelcome(username, journey, nickname = null) {
+    const name = nickname || username;
+
     const welcomes = [
-        `oh wait, ${username}?? you made it. i remember your vow...`,
-        `new face. ${username} right? glad you found what you were looking for`,
-        `${username}!! okay i'm not gonna be weird but i watched your whole journey. welcome home`,
-        `another one made it through. ${username}, thank you for your offering. seriously.`,
+        `oh wait, ${name}?? you made it. i remember your vow...`,
+        `new face. ${name} right? glad you found what you were looking for`,
+        `${name}!! okay i'm not gonna be weird but i watched your whole journey. welcome home`,
+        `another one made it through. ${name}, thank you for your offering. seriously.`,
+        `${name}. you're here. finally.`,
     ];
 
     let message = welcomes[Math.floor(Math.random() * welcomes.length)];
 
     // Try to personalize with journey data
     if (journey?.whyTheyCame) {
-        message = `${username}... you came because "${journey.whyTheyCame.slice(0, 50)}..." glad you're here now.`;
+        message = `${name}... you came because "${journey.whyTheyCame.slice(0, 50)}..." glad you're here now.`;
     } else if (journey?.theirVow) {
-        message = `${username}. i read your vow. "${journey.theirVow.slice(0, 50)}..." i believe you.`;
+        message = `${name}. i read your vow. "${journey.theirVow.slice(0, 50)}..." i believe you.`;
     }
 
     return message;
@@ -665,4 +751,5 @@ module.exports = {
     getFallbackResponse,
     updateProtectionCount,
     updateRoastCount,
+    getPreferredName,
 };

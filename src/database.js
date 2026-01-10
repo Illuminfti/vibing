@@ -899,14 +899,14 @@ const ikaMemoryOps = {
         `).run(user.gate_5_reason, user.gate_7_vow, user.gate_2_answer, userId);
     },
 
-    // Increment interaction count
-    recordInteraction(userId) {
+    // Increment interaction count (with quality multiplier)
+    recordInteraction(userId, multiplier = 1.0) {
         db.prepare(`
             UPDATE ika_memory
-            SET interaction_count = interaction_count + 1,
+            SET interaction_count = interaction_count + ?,
                 last_interaction = CURRENT_TIMESTAMP
             WHERE user_id = ?
-        `).run(userId);
+        `).run(multiplier, userId);
 
         // Check for relationship level upgrade
         const memory = this.get(userId);
