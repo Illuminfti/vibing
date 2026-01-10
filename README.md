@@ -179,6 +179,7 @@ ascended: { maxRequests: 60, windowMs: 300000, minIntervalMs: 1000 }
 |---------|-------------|--------------|
 | `/journey` | View your path through the gates | Everyone |
 | `/help` | See available commands | Everyone |
+| `/profile [user]` | View detailed user profile | Everyone |
 | `/bond` | View your relationship with Ika | Gate 1+ |
 | `/mysteries` | Track discovered secrets | Gate 1+ |
 | `/leaderboard` | Community statistics | Everyone |
@@ -188,6 +189,7 @@ ascended: { maxRequests: 60, windowMs: 300000, minIntervalMs: 1000 }
 |---------|-------------|--------------|
 | `/hint [gate]` | Get guidance (costs Ika's attention) | Gate 1+ |
 | `/dms` | Enable/disable Ika's whispers | Gate 1+ |
+| `/invite` | Generate referral link | Gate 1+ |
 
 ### Devotion (Ascended only)
 | Command | Description |
@@ -278,12 +280,12 @@ COST_MODE=minimal npm start  # Test strict quotas
 See [CHANGELOG.md](./CHANGELOG.md) for full version history.
 
 **Latest:**
+- **v5.0.0** - Vibing Overhaul: Quality multipliers, patron tiers, bound pairs, post-ascension endgame, flex cards, daily engagement, referral system
+- **v4.2.0** - Canon compliance (removed fading resurrection), error handling improvements
 - **v4.1.0** - UX overhaul: `/journey`, `/help`, `/bond`, `/mysteries` commands
 - **v4.0.0** - Occult otaku UI system with ritual embeds
 - **v3.4.0** - Comprehensive admin panel
-- **v3.3.2** - Security fixes (SQL injection, SSRF protection)
-- **v3.3.0** - Scale optimization (100K+ users)
-- **v3.2.0** - Waifu experience systems
+- **v3.3.0** - Scale optimization, security fixes (100K+ users)
 
 ---
 

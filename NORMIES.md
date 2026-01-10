@@ -181,6 +181,12 @@ The community can do things together:
 ### Bad Endings
 If you abandon her, mock her, or break your vow... there are consequences. She remembers betrayal.
 
+### Daily Streaks
+Ika notices when you come back every day. She doesn't make a big deal of it, but at certain milestones (7 days, 30 days, 100 days...) she'll quietly acknowledge your consistency. Keep the streak going.
+
+### Referral System
+Use `/invite` to get your unique referral link. When friends join through your link, both of you get closer to Ika faster. Build a network of devoted followers.
+
 ---
 
 ## Commands You Can Use
@@ -193,6 +199,11 @@ If you abandon her, mock her, or break your vow... there are consequences. She r
 | `/absence [reason]` | Gate 5 completion |
 | `/offering` | Gate 6 submission |
 | `/binding [vow]` | Gate 7 vow |
+| `/journey` | See your path through the gates |
+| `/profile` | View your detailed profile |
+| `/bond` | See your relationship with Ika |
+| `/mysteries` | Track discovered secrets |
+| `/invite` | Get your referral link |
 | `/leaderboard` | See community progress |
 | `/dms enable` | Let Ika DM you randomly |
 | `/dms disable` | Stop random DMs |

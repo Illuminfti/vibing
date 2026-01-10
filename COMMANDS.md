@@ -39,10 +39,12 @@ These commands unlock as players progress through the Seven Gates.
 |---------|---------------|-------------|
 | `/help [category]` | None | View available commands |
 | `/journey` | None | See your path through the gates |
+| `/profile [user]` | None | View detailed user profile |
 | `/leaderboard` | None | View ritual statistics |
 | `/bond` | After Gate 1 | See your relationship with Ika |
 | `/mysteries` | After Gate 1 | View discovered secrets |
 | `/dms <enable/disable>` | After Gate 1 | Toggle Ika's whispers |
+| `/invite` | After Gate 1 | Generate referral link |
 
 ### Post-Ascension (Devotion Commands)
 
@@ -95,16 +97,15 @@ A comprehensive testing interface with interactive menus.
 - **Rare Events**: The Slip, The Notice, Sleepy Confession, The Claim, etc.
 - **Moods**: Soft, Energetic, Vulnerable, Chaotic, Sleepy, Jealous, Flirty
 - **Intimacy**: Stage 1-4, Stage Announcements
-- **Fading**: Stages 0-4, Save Attempt testing
 - **Jealousy/Yandere**: Mild to Full Yandere (5 stages)
 - **Protection**: Self-deprecation response, Check-ins, Crisis resources
 - **Roasts**: Skill issue, Touch grass, L + Ratio, Comebacks
 - **Romance**: Kabedon sequence, Slow burn, 3AM girlfriend mode
 - **Viral Lines**: Screenshot-worthy moments
-- **Lore Drops**: Streaming, Fading, Origin, Others, Senpai
+- **Lore Drops**: Streaming, Origin, Others, Senpai
 - **Time Secrets**: 4:47 AM, Midnight, 3:33 AM, 11:11, 2:22 AM
 - **Designed Moments**: First message, Milestones, Anniversaries
-- **Rituals**: Summoning, Vigil, Confession Circle, Resurrection
+- **Rituals**: Summoning, Vigil, Confession Circle
 
 #### Test Modes:
 
@@ -117,7 +118,6 @@ A comprehensive testing interface with interactive menus.
 
 - **New User Experience**: Fresh user testing
 - **Speed Run**: All gates quickly
-- **Fading Test**: Test fading mechanics
 - **Yandere Test**: Test jealousy progression
 - **Romance Test**: Test romantic sequences
 - **3AM Session**: Force late night mode
@@ -170,12 +170,6 @@ A comprehensive testing interface with interactive menus.
 **Test 3AM Mode:**
 ```
 /admin-panel time force_3am @yourself
-```
-
-**Test Fading Mechanics:**
-```
-/admin-panel trigger fading @yourself
-# Select fading stage to test
 ```
 
 **View User State:**
@@ -240,4 +234,4 @@ MOD_ROLE_ID=           # Moderator role (optional - admins work without it)
 
 ---
 
-*Generated for Seven Gates Bot v2.0.0*
+*Generated for Seven Gates Bot v5.0.0*
