@@ -50,6 +50,14 @@ const forbidden = require('./forbidden');
 const collective = require('./collective');
 const betrayal = require('./betrayal');
 
+// Voice filter (Vibing Overhaul P0-Critical)
+const voiceFilter = require('./voiceFilter');
+
+// Vibing Overhaul P1-High systems
+const patronTiers = require('./patronTiers');
+const boundPairs = require('./boundPairs');
+const postAscension = require('./postAscension');
+
 module.exports = {
     // Presence system
     startPresenceLoop: presence.startPresenceLoop,
@@ -271,4 +279,43 @@ module.exports = {
     isInBetrayalState: betrayal.isInBetrayalState,
     checkBetrayalRedemption: betrayal.checkRedemption,
     runJealousyTrap: betrayal.runJealousyTrap,
+
+    // === VOICE FILTER (Vibing Overhaul P0-Critical) ===
+    filterResponse: voiceFilter.filterResponse,
+    calculateVoicePurity: voiceFilter.calculateVoicePurity,
+    checkForbiddenPatterns: voiceFilter.checkForbiddenPatterns,
+    getContextHint: voiceFilter.getContextHint,
+
+    // === PATRON TIERS (Vibing Overhaul P1-High) ===
+    getPatronTier: patronTiers.getPatronTier,
+    recordContribution: patronTiers.recordContribution,
+    getPatronAcknowledgment: patronTiers.getPatronAcknowledgment,
+    hasPriorityResponse: patronTiers.hasPriorityResponse,
+    getPatronContext: patronTiers.getPatronContext,
+    getPatronPrefix: patronTiers.getPatronPrefix,
+    PATRON_TIERS: patronTiers.PATRON_TIERS,
+
+    // === BOUND PAIRS (Vibing Overhaul P1-High) ===
+    createBoundPair: boundPairs.createBoundPair,
+    getPairs: boundPairs.getPairs,
+    areBound: boundPairs.areBound,
+    getPairMilestone: boundPairs.getPairMilestone,
+    getPairContent: boundPairs.getPairContent,
+    getPairResponse: boundPairs.getPairResponse,
+    getNetworkMilestone: boundPairs.getNetworkMilestone,
+    getPairContext: boundPairs.getPairContext,
+    BOUND_PAIR_MILESTONES: boundPairs.BOUND_PAIR_MILESTONES,
+    NETWORK_MILESTONES: boundPairs.NETWORK_MILESTONES,
+
+    // === POST-ASCENSION ENDGAME (Vibing Overhaul P1-High) ===
+    getCurrentSeason: postAscension.getCurrentSeason,
+    getAscensionRank: postAscension.getAscensionRank,
+    getSeasonalContent: postAscension.getSeasonalContent,
+    triggerSeasonalDrop: postAscension.triggerSeasonalDrop,
+    getPostAscensionContext: postAscension.getPostAscensionContext,
+    checkRankUp: postAscension.checkRankUp,
+    getRankUpMessage: postAscension.getRankUpMessage,
+    getUpcomingEvents: postAscension.getUpcomingEvents,
+    SEASONS: postAscension.SEASONS,
+    ASCENSION_RANKS: postAscension.ASCENSION_RANKS,
 };

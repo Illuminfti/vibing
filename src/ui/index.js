@@ -18,6 +18,20 @@ const { RitualButtonBuilder, createConfirmCancelRow, createNavigationRow, create
 const { RitualModalBuilder, createConfessionModal, createVowModal, createOfferingModal, createAbsenceModal, createFeedbackModal, createSimpleModal, MODAL_PRESETS, GATE_MODAL_TITLES } = require('./builders/ritualModal');
 const { PaginatedEmbed, createLorePagination, createListPagination, createGalleryPagination } = require('./builders/paginatedEmbed');
 
+// Flex Cards (Vibing Overhaul P0-Critical: Screenshot infrastructure)
+const {
+    FLEX_TYPES,
+    CARD_FRAMES,
+    createDevotionAwakenedCard,
+    createGateCompletionCard,
+    createRareMomentCard,
+    createDevotionReceipt,
+    createWhisperFragmentCard,
+    createIntimacyMilestoneCard,
+    createBetrayalCard,
+    createShareText,
+} = require('./builders/flexCards');
+
 // Components
 const errorMessages = require('./components/errorMessages');
 
@@ -63,6 +77,18 @@ module.exports = {
     createLorePagination,
     createListPagination,
     createGalleryPagination,
+
+    // Flex Cards (Vibing Overhaul)
+    FLEX_TYPES,
+    CARD_FRAMES,
+    createDevotionAwakenedCard,
+    createGateCompletionCard,
+    createRareMomentCard,
+    createDevotionReceipt,
+    createWhisperFragmentCard,
+    createIntimacyMilestoneCard,
+    createBetrayalCard,
+    createShareText,
 
     // Sequence builders
     RitualSequence,

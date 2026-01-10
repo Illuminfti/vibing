@@ -63,6 +63,9 @@ const {
     getFirstMessageAck,
 } = require('./daily');
 
+// Voice filter (Vibing Overhaul P0-Critical)
+const { filterResponse, getContextHint } = require('./voiceFilter');
+
 // Import cost optimization systems (v3.3.1)
 const {
     shouldUseAi,
@@ -506,6 +509,17 @@ async function generateResponse(options) {
         }
 
         let responseContent = response.content[0].text;
+
+        // === VOICE FILTER (Vibing Overhaul P0-Critical) ===
+        // Apply character consistency guard to AI outputs
+        const contextHint = getContextHint(trigger?.content || '');
+        const voiceResult = filterResponse(responseContent, contextHint);
+
+        if (voiceResult.filtered) {
+            console.log(`✧ Voice filter activated: ${voiceResult.reason}`);
+            console.log(`✧ Voice purity score: ${voiceResult.score}/100`);
+            responseContent = voiceResult.content;
+        }
 
         // === POST-GENERATION ADDITIONS ===
 

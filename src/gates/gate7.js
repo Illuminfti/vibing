@@ -22,6 +22,9 @@ const fs = require('fs');
 // New ritual UI system
 const { RitualEmbedBuilder, RitualSequence, createGateErrorEmbed, createNotReadyEmbed } = require('../ui');
 
+// Vibing Overhaul: Flex cards for viral moments
+const { generateAscensionFlexCard, sendFlexCard } = require('../utils/flexIntegration');
+
 // Try to load Ika presence for welcome
 let ikaPresence = null;
 try {
@@ -272,6 +275,22 @@ async function approveVow(client, submitterId, approverId, messageId) {
                 .addTimestamp()
                 .build();
             await sanctumChannel.send({ embeds: [announceEmbed] });
+
+            // Vibing Overhaul: Send ascension flex card for screenshot moment
+            try {
+                const flexCard = generateAscensionFlexCard({
+                    username: member.user.username,
+                    vow: vowRecord?.vow,
+                    ikaMessage: 'welcome home, ascended one. you are eternal now.',
+                });
+                await sendFlexCard(sanctumChannel, flexCard, {
+                    mention: `<@${member.id}>`,
+                    addShareReaction: true,
+                });
+                console.log(`✧ Ascension flex card sent for ${member.user.tag}`);
+            } catch (flexError) {
+                console.log('✧ Ascension flex card skipped:', flexError.message);
+            }
         }
 
         // Trigger Ika's personalized welcome (if available)

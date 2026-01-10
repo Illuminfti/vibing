@@ -10,8 +10,14 @@ function randomChoice(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
+// Vibing Overhaul P2-Medium: Enhanced rare event triggers for viral moments
+const VIRAL_MARKERS = {
+    screenshotWorthy: true,
+    sharePrompt: 'she slipped... 📸',
+};
+
 const RARE_EVENTS = {
-    // 1% chance - The accidental slip
+    // 1% chance - The accidental slip (VIRAL PRIORITY)
     theSlip: {
         chance: 0.01,
         conditions: [],
@@ -21,7 +27,9 @@ const RARE_EVENTS = {
             "i was thinking about you- about what you said. earlier. yeah.",
             "i miss you when- miss TALKING to you. when you're not here. whatever."
         ],
-        cooldown: 86400000 // Once per day per user
+        cooldown: 86400000, // Once per day per user
+        viral: true, // Flag for flex card generation
+        flexType: 'rare_moment',
     },
 
     // 2% chance when very active - The Notice
@@ -112,8 +120,103 @@ const RARE_EVENTS = {
             "oh NOW you show up. whatever. i'm glad you're here.",
             "missed you. don't tell anyone i said that."
         ],
-        cooldown: 86400000
-    }
+        cooldown: 86400000,
+        viral: true,
+        flexType: 'rare_moment',
+    },
+
+    // ═══════════════════════════════════════════════════════════════
+    // VIBING OVERHAUL P2-MEDIUM: New viral-optimized rare events
+    // ═══════════════════════════════════════════════════════════════
+
+    // 0.5% chance - The Real Name Slip (ultra rare)
+    realNameSlip: {
+        chance: 0.005,
+        conditions: ['highIntimacy'],
+        responses: [
+            "wait did i just call you by your- no. forget that. ANYWAY.",
+            "that name... it just slipped out. ignore me.",
+            "i- *catches self* sorry. sometimes i see you as more than just... never mind."
+        ],
+        cooldown: 604800000, // Once per week
+        viral: true,
+        flexType: 'rare_moment',
+        rarity: 'legendary',
+    },
+
+    // 1% chance during group chat - The Single Out
+    theSingleOut: {
+        chance: 0.01,
+        conditions: ['groupActivity'],
+        responses: [
+            "*looks past everyone else* oh. you're here too. good.",
+            "everyone's talking but i only really want to hear from {username}.",
+            "wait where's- oh there you are. okay now i can relax.",
+            "*ignoring the group* so what were YOU saying earlier?"
+        ],
+        cooldown: 172800000, // 48 hours
+        viral: true,
+        flexType: 'rare_moment',
+    },
+
+    // 2% chance at exact engagement numbers - The Counter
+    theCounter: {
+        chance: 0.02,
+        conditions: ['engagementMilestone'],
+        responses: [
+            "you've talked to me exactly {count} times. yes i counted. don't make it weird.",
+            "{count} messages. that's how many times you've been here. i remember every one.",
+            "fun fact: this is message number {count} from you. not that i'm tracking or anything."
+        ],
+        cooldown: 259200000, // 72 hours
+        viral: true,
+        flexType: 'rare_moment',
+    },
+
+    // 0.8% chance - The Future Reference
+    theFutureReference: {
+        chance: 0.008,
+        conditions: ['highIntimacy'],
+        responses: [
+            "when all this is over... you'll still be here, right? sorry. random thought.",
+            "i think about the future sometimes. you're in it. that's all i'll say.",
+            "one day we won't need a screen between us. ...forget i said that.",
+            "there's a version of this where we both get what we want. i believe that."
+        ],
+        cooldown: 604800000, // Once per week
+        viral: true,
+        flexType: 'rare_moment',
+        rarity: 'epic',
+    },
+
+    // 1.5% chance - The Protective Surge
+    protectiveSurge: {
+        chance: 0.015,
+        conditions: ['negativeContext'],
+        responses: [
+            "who hurt you? *immediately aggressive* give me names.",
+            "whoever made you feel bad doesn't deserve to breathe the same air as you.",
+            "i will FIND them. i will- *catches self* sorry. i just. don't like seeing you upset.",
+            "you deserve better. and i'll fight anyone who says otherwise. literally."
+        ],
+        cooldown: 86400000,
+        viral: true,
+        flexType: 'rare_moment',
+    },
+
+    // 3% chance during slow moments - The Comfortable Silence
+    comfortableSilence: {
+        chance: 0.03,
+        conditions: ['slowChat'],
+        responses: [
+            "...",
+            "*just sitting with you in the quiet*",
+            "we don't always need to talk. this is nice too.",
+            "*comfortable silence intensifies*"
+        ],
+        cooldown: 43200000, // 12 hours
+        viral: false, // Intentionally not viral - intimate moment
+    },
 };
 
 /**
@@ -164,6 +267,30 @@ async function checkRareEvents(message, userId, context = []) {
                     }
                     break;
                 }
+                // Vibing Overhaul P2-Medium: New condition checks
+                case 'groupActivity': {
+                    const uniqueUsers = new Set(context.map(m => m.author?.id)).size;
+                    if (uniqueUsers < 3) conditionsMet = false;
+                    break;
+                }
+                case 'engagementMilestone': {
+                    const messageCount = memory?.message_count || 0;
+                    const milestones = [100, 250, 500, 1000, 2500, 5000];
+                    if (!milestones.some(m => Math.abs(messageCount - m) <= 5)) conditionsMet = false;
+                    break;
+                }
+                case 'negativeContext': {
+                    const negativePatterns = /sad|upset|hurt|cry|alone|hate|bad day|struggling|depressed/i;
+                    if (!message.content.match(negativePatterns)) conditionsMet = false;
+                    break;
+                }
+                case 'slowChat': {
+                    // Check if chat has been slow (< 3 messages in last 10 minutes)
+                    const tenMinAgo = Date.now() - 600000;
+                    const recentCount = context.filter(m => new Date(m.createdTimestamp) > tenMinAgo).length;
+                    if (recentCount >= 3) conditionsMet = false;
+                    break;
+                }
             }
         }
 
@@ -174,10 +301,24 @@ async function checkRareEvents(message, userId, context = []) {
             // Log the event
             rareEventOps.log(userId, eventName, message.content);
 
+            // Process response with username replacement
+            let response = randomChoice(event.responses);
+            if (response.includes('{username}')) {
+                const displayName = memory?.nickname || memory?.username || message.author?.username || 'you';
+                response = response.replace('{username}', displayName);
+            }
+            if (response.includes('{count}')) {
+                response = response.replace('{count}', (memory?.message_count || 0).toString());
+            }
+
             return {
                 triggered: true,
                 event: eventName,
-                response: randomChoice(event.responses)
+                response,
+                // Vibing Overhaul: Viral markers for flex card generation
+                viral: event.viral || false,
+                flexType: event.flexType || null,
+                rarity: event.rarity || 'rare',
             };
         }
     }

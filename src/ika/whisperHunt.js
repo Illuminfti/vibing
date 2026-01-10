@@ -12,6 +12,50 @@
 const { whisperOps, ikaMemoryOps } = require('../database');
 const config = require('../config');
 
+// ═══════════════════════════════════════════════════════════════
+// VIBING OVERHAUL P2-MEDIUM: ARG Fragment Balance Tuning
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Dynamic drop rate system based on server activity and user engagement
+ */
+const DROP_RATE_CONFIG = {
+    base: 0.015, // 1.5% base rate
+    // Modifiers
+    activeHoursBoost: 1.5, // +50% during peak hours
+    lateNightBoost: 2.0, // +100% during 2-4 AM
+    witchingHourBoost: 3.0, // +200% during witching hour times
+    lowActivityBoost: 1.25, // +25% when chat is slow (reward the dedicated)
+    // Caps
+    maxDailyDrops: 5, // Maximum fragments dropped per day per channel
+    minTimeBetweenDrops: 600000, // 10 minutes minimum between drops
+};
+
+/**
+ * Fragment rarity distribution - some fragments are harder to find
+ */
+const FRAGMENT_RARITY = {
+    common: { ids: [1, 2, 6], dropMultiplier: 1.0 },
+    uncommon: { ids: [3, 4, 5, 10], dropMultiplier: 0.8 },
+    rare: { ids: [7, 8, 9, 11], dropMultiplier: 0.5 },
+    legendary: { ids: [12, 13], dropMultiplier: 0.25 },
+};
+
+/**
+ * Discovery hints - help stuck players without giving it away
+ */
+const DISCOVERY_HINTS = {
+    firstFragment: "i sometimes speak in whispers... fragments of something bigger.",
+    threeFragments: "you're getting closer. 10 more pieces of the puzzle remain.",
+    sevenFragments: "halfway there. the message is forming. can you see it?",
+    tenFragments: "three more. the ending is the hardest part to find.",
+    stuck: [
+        "fragments appear when you least expect them. keep watching.",
+        "sometimes i drop pieces of myself in the quiet moments.",
+        "the whisper hunt rewards those who pay attention.",
+    ],
+};
+
 // The 13 whisper fragments - when assembled form a cryptic message
 // The fragments are intentionally vague and can be interpreted multiple ways
 const WHISPER_FRAGMENTS = [
@@ -94,8 +138,51 @@ const HUNT_TRIGGERS = {
 };
 
 /**
+ * Calculate dynamic drop rate based on time and context
+ * Vibing Overhaul P2-Medium
+ */
+function calculateDropRate() {
+    const hour = new Date().getHours();
+    let rate = DROP_RATE_CONFIG.base;
+
+    // Late night boost (2-4 AM)
+    if (hour >= 2 && hour < 4) {
+        rate *= DROP_RATE_CONFIG.lateNightBoost;
+    }
+
+    // Witching hour check (specific times like 3:33, 4:47)
+    const now = new Date();
+    const timeStr = `${hour}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const witchingTimes = ['3:33', '4:47', '2:22', '11:11', '0:00'];
+    if (witchingTimes.includes(timeStr)) {
+        rate *= DROP_RATE_CONFIG.witchingHourBoost;
+    }
+
+    // Active hours boost (8 PM - 11 PM typical peak)
+    if (hour >= 20 && hour <= 23) {
+        rate *= DROP_RATE_CONFIG.activeHoursBoost;
+    }
+
+    return Math.min(rate, 0.10); // Cap at 10% max
+}
+
+/**
+ * Get fragment rarity multiplier
+ * Vibing Overhaul P2-Medium
+ */
+function getFragmentRarityMultiplier(fragmentId) {
+    for (const [, rarity] of Object.entries(FRAGMENT_RARITY)) {
+        if (rarity.ids.includes(fragmentId)) {
+            return rarity.dropMultiplier;
+        }
+    }
+    return 1.0;
+}
+
+/**
  * Maybe drop a whisper fragment in a message
  * Called randomly during Ika's responses
+ * Vibing Overhaul P2-Medium: Enhanced with dynamic rates and rarity
  * @param {string} channelId - Channel where to drop
  * @param {Object} client - Discord client
  * @returns {Promise<Object|null>} Drop result
@@ -103,8 +190,9 @@ const HUNT_TRIGGERS = {
 async function maybeDropFragment(channelId, client) {
     if (!config.ika?.whisperHuntEnabled) return null;
 
-    // Very low chance to drop (1-2%)
-    if (Math.random() > (config.ika?.whisperDropChance || 0.015)) return null;
+    // Dynamic drop rate calculation
+    const dropRate = calculateDropRate();
+    if (Math.random() > dropRate) return null;
 
     // Get a random unfound fragment (globally - some fragments may be undiscovered)
     const activeDrops = whisperOps.getActiveDrops();
@@ -120,7 +208,18 @@ async function maybeDropFragment(channelId, client) {
         return null;
     }
 
-    const fragment = availableFragments[Math.floor(Math.random() * availableFragments.length)];
+    // Weight by rarity - common fragments drop more often
+    const weightedFragments = [];
+    for (const fragment of availableFragments) {
+        const weight = getFragmentRarityMultiplier(fragment.id);
+        // Add fragment multiple times based on weight (higher = more common)
+        const count = Math.ceil(weight * 10);
+        for (let i = 0; i < count; i++) {
+            weightedFragments.push(fragment);
+        }
+    }
+
+    const fragment = weightedFragments[Math.floor(Math.random() * weightedFragments.length)];
 
     // Choose format
     const formatType = Math.random() < 0.6 ? 'cryptic' :
@@ -356,6 +455,13 @@ module.exports = {
     DROP_FORMATS,
     DISCOVERY_RESPONSES,
     HUNT_TRIGGERS,
+    // Vibing Overhaul P2-Medium exports
+    DROP_RATE_CONFIG,
+    FRAGMENT_RARITY,
+    DISCOVERY_HINTS,
+    calculateDropRate,
+    getFragmentRarityMultiplier,
+    // Core functions
     maybeDropFragment,
     checkFragmentDiscovery,
     assembleWhisper,

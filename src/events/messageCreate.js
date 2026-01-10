@@ -22,6 +22,9 @@ const { scheduleFragment } = require('../gates/fragments');
 const path = require('path');
 const fs = require('fs');
 
+// Vibing Overhaul: Flex cards for viral moments
+const { generateGate1FlexCard, sendFlexCard } = require('../utils/flexIntegration');
+
 // Import optimization systems (v3.3.0)
 const {
     spamDetector,
@@ -179,6 +182,21 @@ async function handleWaitingRoom(message) {
         }
 
         console.log(`✧ ${message.author.tag} completed Gate 1`);
+
+        // Vibing Overhaul: Send flex card for screenshot moment
+        try {
+            const flexCard = generateGate1FlexCard({
+                username: message.author.username,
+                ikaMessage: 'another one who didn\'t look away~',
+                fanNumber: 48, // TODO: Get actual fan count
+            });
+            await sendFlexCard(message.channel, flexCard, {
+                mention: `<@${message.author.id}>`,
+                addShareReaction: true,
+            });
+        } catch (flexError) {
+            console.log('✧ Flex card generation skipped:', flexError.message);
+        }
 
         // Post chamber 1 puzzle
         await postChamberPuzzle(message.client, 1, messages.gate2.puzzle);

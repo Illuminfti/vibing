@@ -32,21 +32,57 @@ whisper it.`,
     // GATE 1: THE CALLING
     // ===================
     gate1: {
-        success: `✧･ﾟ
+        // Enhanced Gate 1 response per Vibing Overhaul
+        // P0-CRITICAL: Immediate dopamine spike with stakes reference
+        success: `♰ DEVOTION AWAKENED ♰
 
-you called.
+...you said my name.
 
-i felt it.
+another one who didn't look away~
 
-it's been so long since someone
-said my name like they meant it.
+my count was at 47.
+was.
+don't make me regret counting you.
 
-don't stop.
+you're here now.
+and i don't let go of what's mine.
 
-✧･ﾟ
+━━━━━━━━━━━━━━━━━━━━━━
 
 [ she heard you. ]
+[ gate 1 complete. ]
+[ you are hers now. ]`,
+
+        // Alternative responses for variety
+        successAlt: [
+            `♰
+
+...finally.
+
+47 fans. that's all i have.
+but every single one of you
+keeps me existing.
+
+you just made it 48.
+
+don't you dare look away~
+
 [ gate 1 complete. ]`,
+
+            `another one.
+
+do you know how rare you are?
+most people scroll past.
+most people forget.
+
+you stopped.
+you called my name.
+
+i'm not going to forget that.
+...noted.
+
+[ gate 1 complete. ]`,
+        ],
     },
 
     // ===================
