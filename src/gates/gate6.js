@@ -12,8 +12,9 @@ const config = require('../config');
 const messages = require('../assets/messages');
 const { userOps, offeringOps } = require('../database');
 const { assignGateRole, hasRole, userHasRole } = require('../utils/roles');
-const { validateOffering, sanitize } = require('../utils/validation');
+const { validateOffering, analyzeOfferingQuality, sanitize } = require('../utils/validation');
 const { maybeGlitch } = require('../utils/zalgo');
+const { ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 const { scheduleFragment } = require('./fragments');
 const path = require('path');
 const fs = require('fs');
@@ -65,9 +66,98 @@ async function processGate6(interaction) {
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    // Defer for processing
+    // Quality check for text offerings (images are subjective, skip quality check)
+    if (validation.type === 'text') {
+        const quality = analyzeOfferingQuality(text);
+
+        // If quality is low or medium, show warning with confirmation
+        if (quality.quality === 'low' || quality.quality === 'medium') {
+            const confirmButton = new ButtonBuilder()
+                .setCustomId('gate6_confirm')
+                .setLabel('submit anyway')
+                .setStyle(ButtonStyle.Success);
+
+            const reviseButton = new ButtonBuilder()
+                .setCustomId('gate6_revise')
+                .setLabel('revise offering')
+                .setStyle(ButtonStyle.Secondary);
+
+            const row = new ActionRowBuilder().addComponents(confirmButton, reviseButton);
+
+            const warningEmbed = new RitualEmbedBuilder(6, { mood: 'normal' })
+                .setRitualTitle('⟡ quality check ⟡')
+                .setIkaMessage('i want your offering to be meaningful. these issues might affect approval:')
+                .addRitualField('concerns', quality.warnings.join('\n'), false)
+                .addRitualField('⟡', 'revise for better chances, or submit as-is', false)
+                .build();
+
+            await interaction.reply({
+                embeds: [warningEmbed],
+                components: [row],
+                ephemeral: true
+            });
+
+            // Collect button response
+            const collector = interaction.channel.createMessageComponentCollector({
+                filter: i => i.user.id === interaction.user.id,
+                time: 120000, // 2 minutes
+                max: 1
+            });
+
+            collector.on('collect', async i => {
+                if (i.customId === 'gate6_confirm') {
+                    // Update the message to show processing
+                    const processingEmbed = new RitualEmbedBuilder(6, { mood: 'normal' })
+                        .setRitualTitle('⟡ submitting offering ⟡')
+                        .setIkaMessage('preparing your creation for judgment...')
+                        .build();
+                    await i.update({
+                        embeds: [processingEmbed],
+                        components: []
+                    });
+                    // Continue with normal submission flow (using original interaction)
+                    await processOfferingSubmission(interaction, member, text, attachment, validation);
+                } else if (i.customId === 'gate6_revise') {
+                    const reviseEmbed = new RitualEmbedBuilder(6, { mood: 'soft' })
+                        .setRitualTitle('⟡ wise choice ⟡')
+                        .setIkaMessage('take your time. make it meaningful.')
+                        .addRitualField('⟡', 'use `/gate6` again when ready', false)
+                        .build();
+                    await i.update({
+                        embeds: [reviseEmbed],
+                        components: []
+                    });
+                }
+            });
+
+            collector.on('end', (collected, reason) => {
+                if (reason === 'time') {
+                    const timeoutEmbed = new RitualEmbedBuilder(6, { mood: 'normal' })
+                        .setRitualTitle('⟡ time expired ⟡')
+                        .setIkaMessage('you took too long. try again when ready.')
+                        .build();
+                    interaction.editReply({
+                        embeds: [timeoutEmbed],
+                        components: []
+                    }).catch(() => {});
+                }
+            });
+
+            return; // Wait for user decision
+        }
+    }
+
+    // Defer for processing (high quality or image)
     await interaction.deferReply({ ephemeral: true });
 
+    // Continue with submission
+    await processOfferingSubmission(interaction, member, text, attachment, validation);
+}
+
+/**
+ * Process the actual offering submission (extracted for reuse in confirmation flow)
+ */
+async function processOfferingSubmission(interaction, member, text, attachment, validation) {
     try {
         // Prepare content
         const content = validation.type === 'image'

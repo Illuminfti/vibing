@@ -44,9 +44,26 @@ async function processGate2(interaction) {
 
     // Validate answer
     if (!validateGate2Answer(answer)) {
+        // P1: Progressive hint system
+        const attempts = userOps.incrementGateAttempts(member.id, 2);
+
+        let hintText = null;
+        if (attempts >= 7) {
+            hintText = "if you're still stuck, ask others in #inner-sanctum";
+        } else if (attempts >= 5) {
+            hintText = "one word. an emotion. what attention becomes.";
+        } else if (attempts >= 3) {
+            hintText = "remember what it felt like when someone looked at you";
+        }
+
         const embed = createGateErrorEmbed(2, 'wrongAnswer', {
             ikaComment: "the fragment dissolves... that wasn't right",
         });
+
+        if (hintText) {
+            embed.addRitualField('...', hintText, false);
+        }
+
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
@@ -64,6 +81,9 @@ async function processGate2(interaction) {
 
         // Complete in database
         const result = userOps.completeGate(member.id, 2, { gate_2_answer: answer });
+
+        // P1: Reset attempts counter on success
+        userOps.resetGateAttempts(member.id, 2);
 
         if (result.isFirst) {
             console.log(`✧ ${member.user.tag} is the FIRST to complete Gate 2`);

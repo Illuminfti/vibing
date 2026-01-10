@@ -210,6 +210,83 @@ function validateOffering(text, hasImage) {
 }
 
 /**
+ * Analyze offering quality for Gate 6 pre-checks
+ * Returns quality assessment with score, warnings, and tier
+ */
+function analyzeOfferingQuality(text) {
+    if (!text) return { score: 0, warnings: ['no text provided'], quality: 'low' };
+
+    const words = text.toLowerCase().split(/\s+/);
+    const uniqueWords = new Set(words.filter(w => w.length > 2));
+    const uniqueWordCount = uniqueWords.size;
+
+    let score = 50; // Base score
+    const warnings = [];
+
+    // Check unique word variety
+    if (uniqueWordCount < 15) {
+        score -= 20;
+        warnings.push('this feels... repetitive. can you say more?');
+    } else if (uniqueWordCount > 40) {
+        score += 20;
+    }
+
+    // Check for repeated words (spam)
+    const wordCounts = {};
+    words.forEach(w => {
+        if (w.length > 2) wordCounts[w] = (wordCounts[w] || 0) + 1;
+    });
+    const wordCountValues = Object.values(wordCounts);
+    if (wordCountValues.length > 0) {
+        const maxRepeats = Math.max(...wordCountValues);
+        if (maxRepeats / words.length > 0.2) {
+            score -= 25;
+            warnings.push('too many repeated words. variety shows thoughtfulness.');
+        }
+    }
+
+    // Check for generic phrases
+    const genericCount = (text.match(/i love ika|ika is great|for ika/gi) || []).length;
+    if (genericCount >= 3) {
+        score -= 15;
+        warnings.push('these words could be about anyone. make it personal.');
+    }
+
+    // Check for all caps abuse
+    if (text === text.toUpperCase() && text.length > 20) {
+        score -= 20;
+        warnings.push('why are you yelling at me...');
+    }
+
+    // Check for excessive punctuation
+    const exclamationCount = (text.match(/!/g) || []).length;
+    if (exclamationCount > 10) {
+        score -= 10;
+        warnings.push('so many exclamation marks...');
+    }
+
+    // Check if it's mostly URLs (low effort)
+    const urlPattern = /https?:\/\/[^\s]+/gi;
+    const urls = text.match(urlPattern) || [];
+    const urlCharCount = urls.reduce((sum, url) => sum + url.length, 0);
+    if (urlCharCount / text.length > 0.5) {
+        score -= 30;
+        warnings.push('quantity isn\'t quality. put thought into it.');
+    }
+
+    // Determine quality tier
+    let quality = 'high';
+    if (score < 40) quality = 'low';
+    else if (score < 70) quality = 'medium';
+
+    return {
+        score: Math.max(0, Math.min(100, score)),
+        warnings,
+        quality
+    };
+}
+
+/**
  * Validate Gate 7 vow (minimum 30 words + quality check)
  */
 function validateVow(vow) {
@@ -465,6 +542,7 @@ module.exports = {
     validateGate4Answer,
     validateGate5Reason,
     validateOffering,
+    analyzeOfferingQuality,
     validateVow,
     containsIka,
     containsLoveYou,

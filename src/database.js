@@ -52,7 +52,11 @@ db.exec(`
         -- REFERRAL SYSTEM (P0-6): Viral tracking
         referred_by TEXT,
         invite_count INTEGER DEFAULT 0,
-        invite_code TEXT UNIQUE
+        invite_code TEXT UNIQUE,
+
+        -- P1: Progressive hint system for puzzle gates
+        gate_2_attempts INTEGER DEFAULT 0,
+        gate_4_attempts INTEGER DEFAULT 0
     );
 
     -- Track first completions for each gate
@@ -584,6 +588,44 @@ const userOps = {
             ascendedAt: user.ascended_at,
             totalTime: user.total_time_seconds,
         };
+    },
+
+    // P1: Progressive hint system - Increment gate attempts
+    incrementGateAttempts(userId, gateNumber) {
+        if (gateNumber !== 2 && gateNumber !== 4) {
+            console.error(`Invalid gate number for attempts tracking: ${gateNumber}`);
+            return 0;
+        }
+
+        const columnName = `gate_${gateNumber}_attempts`;
+        db.prepare(`UPDATE users SET ${columnName} = ${columnName} + 1 WHERE discord_id = ?`).run(userId);
+
+        const user = this.get(userId);
+        return user ? user[columnName] : 0;
+    },
+
+    // P1: Progressive hint system - Get gate attempts
+    getGateAttempts(userId, gateNumber) {
+        if (gateNumber !== 2 && gateNumber !== 4) {
+            console.error(`Invalid gate number for attempts tracking: ${gateNumber}`);
+            return 0;
+        }
+
+        const user = this.get(userId);
+        const columnName = `gate_${gateNumber}_attempts`;
+        return user ? (user[columnName] || 0) : 0;
+    },
+
+    // P1: Progressive hint system - Reset gate attempts on success
+    resetGateAttempts(userId, gateNumber) {
+        if (gateNumber !== 2 && gateNumber !== 4) {
+            console.error(`Invalid gate number for attempts tracking: ${gateNumber}`);
+            return false;
+        }
+
+        const columnName = `gate_${gateNumber}_attempts`;
+        db.prepare(`UPDATE users SET ${columnName} = 0 WHERE discord_id = ?`).run(userId);
+        return true;
     },
 
     // Get stats

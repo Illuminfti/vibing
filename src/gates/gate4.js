@@ -45,9 +45,26 @@ async function processGate4(interaction) {
 
     // Validate answer
     if (!validateGate4Answer(answer)) {
+        // P1: Progressive hint system
+        const attempts = userOps.incrementGateAttempts(member.id, 4);
+
+        let hintText = null;
+        if (attempts >= 7) {
+            hintText = "it's a place on the internet where things are stored.";
+        } else if (attempts >= 5) {
+            hintText = "not heaven. not hell. between. where data goes.";
+        } else if (attempts >= 3) {
+            hintText = "where do things that don't truly die go?";
+        }
+
         const embed = createGateErrorEmbed(4, 'wrongAnswer', {
             ikaComment: 'the waters reject that answer...',
         });
+
+        if (hintText) {
+            embed.addRitualField('༄', hintText, false);
+        }
+
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
@@ -66,6 +83,9 @@ async function processGate4(interaction) {
 
         // Complete in database
         const result = userOps.completeGate(member.id, 4);
+
+        // P1: Reset attempts counter on success
+        userOps.resetGateAttempts(member.id, 4);
 
         // Start Gate 5 sequence
         startGate5Sequence(member.id);
