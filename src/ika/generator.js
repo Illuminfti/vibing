@@ -21,7 +21,7 @@ const { checkJealousy } = require('./jealousy');
 const { checkProtectionTrigger, checkSeriousConcern } = require('./protection');
 const { checkRoastTrigger } = require('./roasts');
 const { checkGrowthMilestone } = require('./growth');
-const { calculateIntimacyStage, getIntimacyInstructions, checkStageIncrease, getStageAnnouncement } = require('./intimacy');
+const { calculateIntimacyStage, getIntimacyInstructions, checkStageIncrease, getStageAnnouncement, checkIntimacyDecay, getDecayMessage } = require('./intimacy');
 
 // Import daily engagement system
 const {
@@ -316,6 +316,21 @@ async function generateResponse(options) {
     // Get current mood
     const currentMood = mood || getCurrentMood(context);
 
+    // Check for intimacy decay before calculating stage
+    let decayInfo = null;
+    if (userId) {
+        const decay = checkIntimacyDecay(userId);
+        if (decay.decayed) {
+            const decayMsg = getDecayMessage(decay.oldStage, decay.newStage, decay.daysInactive);
+            decayInfo = {
+                message: decayMsg,
+                oldStage: decay.oldStage,
+                newStage: decay.newStage,
+                daysInactive: decay.daysInactive
+            };
+        }
+    }
+
     // Calculate intimacy stage
     const intimacyStage = userId ? await calculateIntimacyStage(userId) : 1;
     const intimacyInstructions = getIntimacyInstructions(intimacyStage);
@@ -324,6 +339,11 @@ async function generateResponse(options) {
     let memoryContext = '';
     if (userId) {
         memoryContext = getMemoryContext(userId) || '';
+
+        // Add decay context if relationship decayed
+        if (decayInfo) {
+            memoryContext += `\n[IMPORTANT: Intimacy decayed from stage ${decayInfo.oldStage} to ${decayInfo.newStage} after ${decayInfo.daysInactive} days inactive. Acknowledge this naturally: "${decayInfo.message}"]`;
+        }
 
         // Add lore status if they have discoveries
         const loreStatus = getLoreStatus(userId);

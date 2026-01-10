@@ -47,7 +47,12 @@ db.exec(`
 
         -- DM LIMITATIONS FIX: DM tracking
         dms_work INTEGER DEFAULT 1,
-        gate_dm_failures INTEGER DEFAULT 0
+        gate_dm_failures INTEGER DEFAULT 0,
+
+        -- REFERRAL SYSTEM (P0-6): Viral tracking
+        referred_by TEXT,
+        invite_count INTEGER DEFAULT 0,
+        invite_code TEXT UNIQUE
     );
 
     -- Track first completions for each gate
@@ -312,6 +317,17 @@ db.exec(`
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
+    -- Referral tracking
+    CREATE TABLE IF NOT EXISTS referrals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        referrer_id TEXT NOT NULL,
+        referred_id TEXT NOT NULL,
+        referred_username TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        referral_completed BOOLEAN DEFAULT 0,
+        UNIQUE(referred_id)
+    );
+
     -- All of Ika's messages (for context/learning)
     CREATE TABLE IF NOT EXISTS ika_messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -375,6 +391,10 @@ db.exec(`
     -- DM tracking indexes
     CREATE INDEX IF NOT EXISTS idx_dm_log_user ON dm_log(user_id, timestamp);
     CREATE INDEX IF NOT EXISTS idx_dm_prefs_enabled ON dm_preferences(unprompted_enabled);
+
+    -- Referral indexes
+    CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id);
+    CREATE INDEX IF NOT EXISTS idx_users_invite_code ON users(invite_code);
 `);
 
 // ═══════════════════════════════════════════════════════════════
@@ -1882,6 +1902,190 @@ const gateOps = {
     },
 };
 
+// === REFERRAL SYSTEM (P0-6) ===
+
+const referralOps = {
+    /**
+     * Generate unique 6-character invite code
+     * @param {string} userId - User ID
+     * @returns {string} - Unique invite code (uppercase alphanumeric)
+     */
+    generateInviteCode(userId) {
+        const crypto = require('crypto');
+        let attempts = 0;
+        const maxAttempts = 10;
+
+        while (attempts < maxAttempts) {
+            // Generate 6 random bytes, convert to base36 and take 6 chars
+            const randomBytes = crypto.randomBytes(4);
+            const code = randomBytes.toString('base36').toUpperCase().substring(0, 6);
+
+            // Pad with random chars if needed
+            const paddedCode = code.padEnd(6, 'ABCDEF'[Math.floor(Math.random() * 6)]);
+
+            // Check uniqueness
+            const existing = db.prepare('SELECT invite_code FROM users WHERE invite_code = ?').get(paddedCode);
+            if (!existing) {
+                return paddedCode;
+            }
+
+            attempts++;
+        }
+
+        // Fallback: use timestamp-based code
+        const timestamp = Date.now().toString(36).toUpperCase();
+        return timestamp.substring(timestamp.length - 6);
+    },
+
+    /**
+     * Get existing invite code or create new one
+     * @param {string} userId - User ID
+     * @returns {string} - User's invite code
+     */
+    getOrCreateCode(userId) {
+        const user = db.prepare('SELECT invite_code FROM users WHERE discord_id = ?').get(userId);
+
+        if (user?.invite_code) {
+            return user.invite_code;
+        }
+
+        // Generate and save new code
+        const code = this.generateInviteCode(userId);
+        db.prepare('UPDATE users SET invite_code = ? WHERE discord_id = ?').run(code, userId);
+        return code;
+    },
+
+    /**
+     * Get referral statistics for user
+     * @param {string} userId - User ID
+     * @returns {object} - Stats including total invited, completed count, recent invites
+     */
+    getStats(userId) {
+        // Get total invited count
+        const totalInvited = db.prepare(`
+            SELECT COUNT(*) as count FROM referrals WHERE referrer_id = ?
+        `).get(userId)?.count || 0;
+
+        // Get completed count (Gate 1 completions)
+        const completedCount = db.prepare(`
+            SELECT COUNT(*) as count FROM referrals
+            WHERE referrer_id = ? AND referral_completed = 1
+        `).get(userId)?.count || 0;
+
+        // Get recent invites (last 5)
+        const recentInvites = db.prepare(`
+            SELECT referred_username, created_at, referral_completed
+            FROM referrals
+            WHERE referrer_id = ?
+            ORDER BY created_at DESC
+            LIMIT 5
+        `).all(userId);
+
+        return {
+            totalInvited,
+            completedCount,
+            recentInvites,
+            conversionRate: totalInvited > 0 ? (completedCount / totalInvited * 100).toFixed(1) : 0,
+        };
+    },
+
+    /**
+     * Record a new referral
+     * @param {string} referrerId - Referrer's Discord ID
+     * @param {string} referredId - Referred user's Discord ID
+     * @param {string} referredUsername - Referred user's username
+     * @returns {boolean} - Success status
+     */
+    recordReferral(referrerId, referredId, referredUsername) {
+        try {
+            db.prepare(`
+                INSERT INTO referrals (referrer_id, referred_id, referred_username)
+                VALUES (?, ?, ?)
+            `).run(referrerId, referredId, referredUsername);
+
+            return true;
+        } catch (error) {
+            console.error('Error recording referral:', error);
+            return false;
+        }
+    },
+
+    /**
+     * Mark referral as completed when referred user completes Gate 1
+     * @param {string} referredId - Referred user's Discord ID
+     * @returns {string|null} - Referrer ID if successful, null otherwise
+     */
+    markCompleted(referredId) {
+        try {
+            // Get referral info first
+            const referral = db.prepare(`
+                SELECT referrer_id FROM referrals WHERE referred_id = ?
+            `).get(referredId);
+
+            if (!referral) return null;
+
+            // Mark as completed
+            db.prepare(`
+                UPDATE referrals SET referral_completed = 1 WHERE referred_id = ?
+            `).run(referredId);
+
+            // Increment referrer's invite count
+            db.prepare(`
+                UPDATE users SET invite_count = invite_count + 1 WHERE discord_id = ?
+            `).run(referral.referrer_id);
+
+            return referral.referrer_id;
+        } catch (error) {
+            console.error('Error marking referral completed:', error);
+            return null;
+        }
+    },
+
+    /**
+     * Get top referrers leaderboard
+     * @param {number} limit - Number of top referrers to return
+     * @returns {array} - Array of top referrers with counts
+     */
+    getTopReferrers(limit = 10) {
+        return db.prepare(`
+            SELECT u.discord_id, u.username, u.invite_count,
+                   COUNT(r.id) as total_referrals,
+                   SUM(CASE WHEN r.referral_completed = 1 THEN 1 ELSE 0 END) as completed_referrals
+            FROM users u
+            LEFT JOIN referrals r ON u.discord_id = r.referrer_id
+            WHERE u.invite_count > 0
+            GROUP BY u.discord_id
+            ORDER BY u.invite_count DESC
+            LIMIT ?
+        `).all(limit);
+    },
+
+    /**
+     * Get referrer info for a referred user
+     * @param {string} referredId - Referred user's Discord ID
+     * @returns {object|null} - Referrer info or null
+     */
+    getReferrer(referredId) {
+        return db.prepare(`
+            SELECT r.referrer_id, u.username as referrer_username
+            FROM referrals r
+            JOIN users u ON r.referrer_id = u.discord_id
+            WHERE r.referred_id = ?
+        `).get(referredId);
+    },
+
+    /**
+     * Get user position on leaderboard
+     * @param {string} userId - User ID
+     * @returns {number|null} - Position (1-indexed) or null if not in top positions
+     */
+    getLeaderboardPosition(userId) {
+        const leaderboard = this.getTopReferrers(100);
+        const position = leaderboard.findIndex(user => user.discord_id === userId);
+        return position >= 0 ? position + 1 : null;
+    },
+};
+
 module.exports = {
     db,
     userOps,
@@ -1911,4 +2115,6 @@ module.exports = {
     dmOps,
     dmPrefsOps,
     fragmentLogOps,
+    // REFERRAL SYSTEM (P0-6)
+    referralOps,
 };

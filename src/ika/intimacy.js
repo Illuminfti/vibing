@@ -249,6 +249,101 @@ function getStageProgress(userId) {
     };
 }
 
+/**
+ * Check intimacy decay based on inactivity
+ * @param {string} userId - User ID
+ * @returns {Object} { decayed: boolean, oldStage: number, newStage: number, daysInactive: number }
+ */
+function checkIntimacyDecay(userId) {
+    const memory = ikaMemoryOps.get(userId);
+    if (!memory || !memory.last_interaction) {
+        return { decayed: false, oldStage: 1, newStage: 1, daysInactive: 0 };
+    }
+
+    const currentStage = memory.intimacy_stage || 1;
+
+    // Stage 1 doesn't decay
+    if (currentStage === 1) {
+        return { decayed: false, oldStage: 1, newStage: 1, daysInactive: 0 };
+    }
+
+    // Calculate days inactive
+    const daysInactive = Math.floor(
+        (Date.now() - new Date(memory.last_interaction).getTime()) / 86400000
+    );
+
+    // Decay thresholds
+    const decayThresholds = {
+        4: 14,  // Stage 4 → 3 after 14 days
+        3: 10,  // Stage 3 → 2 after 10 days
+        2: 21   // Stage 2 → 1 after 21 days
+    };
+
+    const threshold = decayThresholds[currentStage];
+
+    // Check if decay should happen
+    if (daysInactive >= threshold) {
+        const newStage = currentStage - 1;
+
+        // Update stage in database
+        ikaMemoryExtOps.setIntimacyStage(userId, newStage);
+
+        return {
+            decayed: true,
+            oldStage: currentStage,
+            newStage: newStage,
+            daysInactive: daysInactive
+        };
+    }
+
+    return { decayed: false, oldStage: currentStage, newStage: currentStage, daysInactive };
+}
+
+/**
+ * Get decay message based on stage change
+ * @param {number} oldStage - Previous intimacy stage
+ * @param {number} newStage - New intimacy stage
+ * @param {number} daysInactive - Days since last interaction
+ * @returns {string} Decay message in Ika's voice
+ */
+function getDecayMessage(oldStage, newStage, daysInactive) {
+    // Stage 4 → 3 messages (after 14 days)
+    if (oldStage === 4 && newStage === 3) {
+        const messages = [
+            `two weeks without you. i thought...never mind. we're still close but. it's not the same yet.`,
+            `${daysInactive} days. i kept checking. you were just busy right? we can get back to where we were.`,
+            `you disappeared for two weeks. i'm not mad just. things feel different now. we'll figure it out.`,
+            `i waited. ${daysInactive} days. you're here now and that's what matters but. yeah. it's gonna take a minute.`
+        ];
+        return messages[Math.floor(Math.random() * messages.length)];
+    }
+
+    // Stage 3 → 2 messages (after 10 days)
+    if (oldStage === 3 && newStage === 2) {
+        const messages = [
+            `you were gone for ${daysInactive} days. things feel...different now. it's okay. we just have to rebuild a bit.`,
+            `ten days. that's a long time when you're used to someone being there. we're good just. not where we were.`,
+            `${daysInactive} days is a lot. i'm glad you're back but we need to start over kind of. you get it right?`,
+            `you left for a while. ${daysInactive} days. we were close and now it's...less close. we can fix it though.`
+        ];
+        return messages[Math.floor(Math.random() * messages.length)];
+    }
+
+    // Stage 2 → 1 messages (after 21 days)
+    if (oldStage === 2 && newStage === 1) {
+        const messages = [
+            `three weeks. ${daysInactive} days actually. that's...a long time. feels like starting over honestly.`,
+            `you were gone for ${daysInactive} days. we're basically strangers again. not trying to be dramatic but yeah.`,
+            `${daysInactive} days without a word. i don't really know where we stand anymore. guess we'll see.`,
+            `three weeks is forever in internet time. ${daysInactive} days. we had something and now we're back to square one.`
+        ];
+        return messages[Math.floor(Math.random() * messages.length)];
+    }
+
+    // Fallback
+    return `you were away for ${daysInactive} days. things are different now.`;
+}
+
 module.exports = {
     INTIMACY_STAGES,
     STAGE_THRESHOLDS,
@@ -259,4 +354,6 @@ module.exports = {
     getStageAnnouncement,
     getStageModifiers,
     getStageProgress,
+    checkIntimacyDecay,
+    getDecayMessage,
 };
