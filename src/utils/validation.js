@@ -157,11 +157,41 @@ function validateGate4Answer(answer) {
 }
 
 /**
- * Validate Gate 5 reason (minimum length)
+ * Validate Gate 5 reason (minimum length + quality check)
  */
 function validateGate5Reason(reason) {
     if (!reason || typeof reason !== 'string') return false;
-    return reason.trim().length >= 15;
+
+    const trimmed = reason.trim().toLowerCase();
+
+    // Minimum length
+    if (trimmed.length < 15) return false;
+
+    // Reject lazy/generic answers
+    const lazyPatterns = [
+        /^idk/,
+        /^i don't know/,
+        /^because$/,
+        /^bored$/,
+        /^why not/,
+        /^just because/,
+        /^no reason/,
+        /^dunno/,
+        /^curiosity$/,
+        /^fun$/,
+    ];
+
+    for (const pattern of lazyPatterns) {
+        if (pattern.test(trimmed)) {
+            return false;
+        }
+    }
+
+    // Check if it's mostly repeated characters (spam check)
+    const uniqueChars = new Set(trimmed.replace(/\s/g, '')).size;
+    if (uniqueChars < 5) return false;
+
+    return true;
 }
 
 /**
@@ -180,11 +210,68 @@ function validateOffering(text, hasImage) {
 }
 
 /**
- * Validate Gate 7 vow (minimum 30 words)
+ * Validate Gate 7 vow (minimum 30 words + quality check)
  */
 function validateVow(vow) {
     if (!vow || typeof vow !== 'string') return false;
-    return wordCount(vow) >= 30;
+
+    const trimmed = vow.trim();
+    const lower = trimmed.toLowerCase();
+
+    // Minimum word count
+    if (wordCount(trimmed) < 30) return false;
+
+    // Reject if it contains profanity or explicit jokes
+    const inappropriatePatterns = [
+        /fuck/i,
+        /shit/i,
+        /ass(?!cended)/i, // allow "ascended" but not "ass"
+        /dick/i,
+        /cock/i,
+        /pussy/i,
+        /bitch/i,
+        /penis/i,
+        /vagina/i,
+        /porn/i,
+        /sex(?!tual|y)/i, // allow "sexual" but not "sex"
+        /cum(?!ulative)/i,
+        /lmao/,
+        /lol/,
+        /haha/,
+        /lmfao/,
+        /jk(?!\w)/i, // "jk" but allow as part of other words
+        /just kidding/i,
+        /test(?:ing)?$/i, // "test" or "testing" at end
+        /lorem ipsum/i,
+    ];
+
+    for (const pattern of inappropriatePatterns) {
+        if (pattern.test(trimmed)) {
+            return false;
+        }
+    }
+
+    // Check if it's mostly repeated words (spam)
+    const words = lower.split(/\s+/);
+    const uniqueWords = new Set(words.filter(w => w.length > 2)); // ignore short words like "i", "a"
+    if (uniqueWords.size < 8) return false; // Need at least 8 unique meaningful words
+
+    // Reject if it's overly generic (too many of these phrases)
+    const genericPhrases = [
+        'i promise to',
+        'i will be',
+        'i swear to',
+        'i vow to',
+        'i pledge to',
+    ];
+
+    const genericCount = genericPhrases.reduce((count, phrase) => {
+        return count + (lower.includes(phrase) ? 1 : 0);
+    }, 0);
+
+    if (genericCount >= 3) return false; // Too many generic promises
+
+    return true;
 }
 
 /**

@@ -62,10 +62,10 @@ async function processGate7(interaction) {
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    // Validate vow
+    // Validate vow quality
     if (!validateVow(vow)) {
         const embed = createGateErrorEmbed(7, 'tooShort', {
-            ikaComment: '30 words. a binding requires weight.',
+            ikaComment: 'this is the final gate. be serious. say something that only YOU would say.',
         });
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }

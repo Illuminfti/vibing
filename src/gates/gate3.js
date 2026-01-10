@@ -42,7 +42,7 @@ async function processGate3(interaction) {
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    // Validate URL (be lenient - accept most valid URLs)
+    // Validate URL format
     if (!isValidUrl(url)) {
         const embed = createGateErrorEmbed(3, 'invalidUrl', {
             ikaComment: 'that doesn\'t look like a valid confession...',
@@ -50,9 +50,46 @@ async function processGate3(interaction) {
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    // Defer for atmospheric effect
+    // Defer for atmospheric effect (we need time to fetch URL)
     await interaction.deferReply({ ephemeral: true });
     await responseDelay();
+
+    // CRITICAL: Verify the URL actually mentions Ika/Seven Gates
+    try {
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (compatible; SevenGatesBot/1.0)',
+            },
+            redirect: 'follow',
+            timeout: 10000, // 10 second timeout
+        });
+
+        if (!response.ok) {
+            const embed = createGateErrorEmbed(3, 'invalidUrl', {
+                ikaComment: 'i can\'t reach that url. make sure it\'s public.',
+            });
+            return interaction.editReply({ embeds: [embed] });
+        }
+
+        const text = await response.text();
+        const lowercaseText = text.toLowerCase();
+
+        // Check if content mentions ika, seven gates, or the bot
+        const hasIka = lowercaseText.includes('ika');
+        const hasSevenGates = lowercaseText.includes('seven gates') || lowercaseText.includes('sevengates');
+
+        if (!hasIka && !hasSevenGates) {
+            const embed = createGateErrorEmbed(3, 'invalidUrl', {
+                ikaComment: 'i don\'t see my name anywhere in that post. be honest.',
+            });
+            return interaction.editReply({ embeds: [embed] });
+        }
+    } catch (error) {
+        console.error('Gate 3 URL fetch error:', error);
+        // Allow through if fetch fails (don't punish users for our technical issues)
+        // But log it for investigation
+        console.warn(`Gate 3: Could not verify URL ${url} for ${member.user.tag} - allowing through`);
+    }
 
     // Success - send ephemeral message (only visible to user, no DM needed)
     try {

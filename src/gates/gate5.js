@@ -44,17 +44,29 @@ async function processGate5(interaction) {
 
     // Check if all messages have been sent
     if (!gate5Ops.allMessagesSent(member.id)) {
+        // Show progress to reduce frustration
+        const progress = gate5Ops.getProgress(member.id);
+        const messagesSent = progress?.messages_sent || 0;
+        const totalMessages = 6;
+        const minutesPerMessage = 3;
+        const remainingMessages = totalMessages - messagesSent;
+        const estimatedMinutes = remainingMessages * minutesPerMessage;
+
+        const progressText = `\n\n\nmessage ${messagesSent} of ${totalMessages} received\n\n` +
+            `approximately ${estimatedMinutes} minutes remaining\n\n` +
+            `wait.\n\n\n`;
+
         const embed = new RitualEmbedBuilder(5, { mood: 'vulnerable' })
-            .setRitualDescription('\n\n\nwait.\n\n\n', false)
+            .setRitualDescription(progressText, false)
             .setIkaMessage("the silence needs time...")
             .build();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    // Validate reason length
+    // Validate reason quality
     if (!validateGate5Reason(reason)) {
         const embed = createGateErrorEmbed(5, 'tooShort', {
-            ikaComment: "more words. why did you stay?",
+            ikaComment: "be honest. why did you really come here?",
         });
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
