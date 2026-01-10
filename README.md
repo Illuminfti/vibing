@@ -3,6 +3,8 @@
 A mystical puzzle experience where players progress through 7 trials to resurrect a faded idol named Ika.
 
 > For non-technical users, see [NORMIES.md](./NORMIES.md)
+> For the complete gate guide, see [GATES.md](./GATES.md)
+> For command reference, see [COMMANDS.md](./COMMANDS.md)
 > For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ---
@@ -59,16 +61,24 @@ src/
 │   └── setup.js          # Server setup
 ├── events/               # Discord events
 ├── gates/                # Gate logic
-├── ika/                  # AI personality system
+├── ika/                  # AI personality system (42 modules)
 │   ├── generator.js      # Claude API integration
 │   ├── personality.js    # System prompts
 │   ├── moods.js          # Mood system
 │   ├── memory.js         # User memory
-│   └── ...               # Feature modules
+│   ├── voiceFilter.js    # Response filtering (P0)
+│   ├── interactionQuality.js # Quality multipliers
+│   ├── patronTiers.js    # Patron handling
+│   ├── boundPairs.js     # User pair relationships
+│   ├── postAscension.js  # Seasonal endgame content
+│   ├── daily.js          # Daily engagement streaks
+│   └── ...               # 30+ feature modules
 ├── ui/                   # Ritual UI system
 │   ├── builders/         # Embed builders
 │   │   ├── ritualEmbed.js    # Themed embeds
-│   │   └── ritualSequence.js # Multi-message reveals
+│   │   ├── ritualSequence.js # Multi-message reveals
+│   │   ├── flexCards.js      # Screenshot-worthy cards
+│   │   └── paginatedEmbed.js # Paginated content
 │   ├── themes/           # Visual themes
 │   │   ├── gateThemes.js     # Per-gate styling
 │   │   └── moodOverlays.js   # Mood modifications
@@ -159,6 +169,8 @@ ascended: { maxRequests: 60, windowMs: 300000, minIntervalMs: 1000 }
 ---
 
 ## The Seven Gates
+
+See [GATES.md](./GATES.md) for the complete gate guide with detailed walkthroughs.
 
 | Gate | Command | Validation |
 |------|---------|------------|
