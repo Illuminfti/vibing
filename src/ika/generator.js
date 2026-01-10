@@ -23,6 +23,15 @@ const { checkRoastTrigger } = require('./roasts');
 const { checkGrowthMilestone } = require('./growth');
 const { calculateIntimacyStage, getIntimacyInstructions, checkStageIncrease, getStageAnnouncement } = require('./intimacy');
 
+// Import daily engagement system
+const {
+    checkDaily,
+    getStreakContext,
+    getMilestoneMessage,
+    shouldAcknowledgeStreak,
+    getFirstMessageAck,
+} = require('./daily');
+
 // Import cost optimization systems (v3.3.1)
 const {
     shouldUseAi,
@@ -92,6 +101,12 @@ async function generateResponse(options) {
 
     const userId = trigger?.author?.id;
     const content = trigger?.content || '';
+
+    // === DAILY ENGAGEMENT SYSTEM: Check daily streak (silent, background) ===
+    let dailyCheck = null;
+    if (userId) {
+        dailyCheck = checkDaily(userId);
+    }
 
     // Set first interaction timestamp if not set
     if (userId) {
@@ -320,6 +335,14 @@ async function generateResponse(options) {
         if (loreProgress) {
             memoryContext += `\nLore discovered: ${loreProgress}`;
         }
+
+        // Add daily streak context if this is their first message today
+        if (dailyCheck && dailyCheck.isFirst) {
+            const streakContext = getStreakContext(dailyCheck.streak, dailyCheck.isFirst, dailyCheck.wasBroken);
+            if (streakContext) {
+                memoryContext += `\n${streakContext}`;
+            }
+        }
     }
 
     // Build system prompt with all context
@@ -395,6 +418,16 @@ async function generateResponse(options) {
         let responseContent = response.content[0].text;
 
         // === POST-GENERATION ADDITIONS ===
+
+        // Check for daily streak milestone
+        if (userId && dailyCheck && dailyCheck.milestone) {
+            if (shouldAcknowledgeStreak(dailyCheck.milestone, dailyCheck.streak)) {
+                const milestoneMsg = getMilestoneMessage(dailyCheck.milestone);
+                if (milestoneMsg) {
+                    responseContent += `\n\n...${milestoneMsg}`;
+                }
+            }
+        }
 
         // Check for growth milestone
         if (userId) {

@@ -159,7 +159,12 @@ db.exec(`
         last_kabedon DATETIME,
         romance_heat INTEGER DEFAULT 0,
         forbidden_tier INTEGER DEFAULT 0,
-        ritual_tokens TEXT DEFAULT '{}'
+        ritual_tokens TEXT DEFAULT '{}',
+
+        -- DAILY ENGAGEMENT SYSTEM (P0-3)
+        daily_streak INTEGER DEFAULT 0,
+        last_daily_checkin DATE,
+        total_daily_checkins INTEGER DEFAULT 0
     );
 
     -- Lore fragment tracking
@@ -396,7 +401,7 @@ const ALLOWED_MEMORY_COLUMNS = new Set([
     'dms_enabled', 'dm_failures', 'last_dm_attempt', 'unprompted_opt_in',
     'shrine', 'yandere_stage', 'betrayal_count', 'betrayal_type',
     'redemption_stage', 'last_kabedon', 'romance_heat', 'forbidden_tier',
-    'ritual_tokens',
+    'ritual_tokens', 'daily_streak', 'last_daily_checkin', 'total_daily_checkins',
 ]);
 
 /**
@@ -937,6 +942,68 @@ const ikaMemoryOps = {
     // Get users by relationship level
     getByRelationshipLevel(level) {
         return db.prepare('SELECT * FROM ika_memory WHERE relationship_level = ?').all(level);
+    },
+
+    // === DAILY ENGAGEMENT SYSTEM (P0-3) ===
+
+    /**
+     * Check and update daily check-in streak
+     * @param {string} userId - User ID
+     * @returns {{isFirst: boolean, streak: number, total: number, wasBroken: boolean}}
+     */
+    checkDailyStreak(userId) {
+        const memory = this.get(userId);
+        if (!memory) return { isFirst: false, streak: 0, total: 0, wasBroken: false };
+
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const lastCheckin = memory.last_daily_checkin;
+
+        // Already checked in today
+        if (lastCheckin === today) {
+            return {
+                isFirst: false,
+                streak: memory.daily_streak || 0,
+                total: memory.total_daily_checkins || 0,
+                wasBroken: false,
+            };
+        }
+
+        let newStreak = 1;
+        let wasBroken = false;
+
+        // Check if yesterday was last check-in (streak continues)
+        if (lastCheckin) {
+            const lastDate = new Date(lastCheckin + 'T00:00:00Z');
+            const todayDate = new Date(today + 'T00:00:00Z');
+            const daysDiff = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
+
+            if (daysDiff === 1) {
+                // Consecutive day - increment streak
+                newStreak = (memory.daily_streak || 0) + 1;
+            } else if (daysDiff > 1) {
+                // Streak broken
+                newStreak = 1;
+                wasBroken = (memory.daily_streak || 0) > 0;
+            }
+        }
+
+        const newTotal = (memory.total_daily_checkins || 0) + 1;
+
+        // Update database
+        db.prepare(`
+            UPDATE ika_memory
+            SET daily_streak = ?,
+                last_daily_checkin = ?,
+                total_daily_checkins = ?
+            WHERE user_id = ?
+        `).run(newStreak, today, newTotal, userId);
+
+        return {
+            isFirst: true,
+            streak: newStreak,
+            total: newTotal,
+            wasBroken,
+        };
     },
 };
 
