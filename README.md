@@ -3,6 +3,8 @@
 A mystical puzzle experience where players progress through 7 trials to resurrect a faded idol named Ika.
 
 > For non-technical users, see [NORMIES.md](./NORMIES.md)
+> For the complete gate guide, see [GATES.md](./GATES.md)
+> For command reference, see [COMMANDS.md](./COMMANDS.md)
 > For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ---
@@ -59,16 +61,24 @@ src/
 │   └── setup.js          # Server setup
 ├── events/               # Discord events
 ├── gates/                # Gate logic
-├── ika/                  # AI personality system
+├── ika/                  # AI personality system (42 modules)
 │   ├── generator.js      # Claude API integration
 │   ├── personality.js    # System prompts
 │   ├── moods.js          # Mood system
 │   ├── memory.js         # User memory
-│   └── ...               # Feature modules
+│   ├── voiceFilter.js    # Response filtering (P0)
+│   ├── interactionQuality.js # Quality multipliers
+│   ├── patronTiers.js    # Patron handling
+│   ├── boundPairs.js     # User pair relationships
+│   ├── postAscension.js  # Seasonal endgame content
+│   ├── daily.js          # Daily engagement streaks
+│   └── ...               # 30+ feature modules
 ├── ui/                   # Ritual UI system
 │   ├── builders/         # Embed builders
 │   │   ├── ritualEmbed.js    # Themed embeds
-│   │   └── ritualSequence.js # Multi-message reveals
+│   │   ├── ritualSequence.js # Multi-message reveals
+│   │   ├── flexCards.js      # Screenshot-worthy cards
+│   │   └── paginatedEmbed.js # Paginated content
 │   ├── themes/           # Visual themes
 │   │   ├── gateThemes.js     # Per-gate styling
 │   │   └── moodOverlays.js   # Mood modifications
@@ -160,6 +170,8 @@ ascended: { maxRequests: 60, windowMs: 300000, minIntervalMs: 1000 }
 
 ## The Seven Gates
 
+See [GATES.md](./GATES.md) for the complete gate guide with detailed walkthroughs.
+
 | Gate | Command | Validation |
 |------|---------|------------|
 | 1 | Say "ika" in waiting room | `containsIka()` |
@@ -179,6 +191,7 @@ ascended: { maxRequests: 60, windowMs: 300000, minIntervalMs: 1000 }
 |---------|-------------|--------------|
 | `/journey` | View your path through the gates | Everyone |
 | `/help` | See available commands | Everyone |
+| `/profile [user]` | View detailed user profile | Everyone |
 | `/bond` | View your relationship with Ika | Gate 1+ |
 | `/mysteries` | Track discovered secrets | Gate 1+ |
 | `/leaderboard` | Community statistics | Everyone |
@@ -188,6 +201,7 @@ ascended: { maxRequests: 60, windowMs: 300000, minIntervalMs: 1000 }
 |---------|-------------|--------------|
 | `/hint [gate]` | Get guidance (costs Ika's attention) | Gate 1+ |
 | `/dms` | Enable/disable Ika's whispers | Gate 1+ |
+| `/invite` | Generate referral link | Gate 1+ |
 
 ### Devotion (Ascended only)
 | Command | Description |
@@ -278,12 +292,12 @@ COST_MODE=minimal npm start  # Test strict quotas
 See [CHANGELOG.md](./CHANGELOG.md) for full version history.
 
 **Latest:**
+- **v5.0.0** - Vibing Overhaul: Quality multipliers, patron tiers, bound pairs, post-ascension endgame, flex cards, daily engagement, referral system
+- **v4.2.0** - Canon compliance (removed fading resurrection), error handling improvements
 - **v4.1.0** - UX overhaul: `/journey`, `/help`, `/bond`, `/mysteries` commands
 - **v4.0.0** - Occult otaku UI system with ritual embeds
 - **v3.4.0** - Comprehensive admin panel
-- **v3.3.2** - Security fixes (SQL injection, SSRF protection)
-- **v3.3.0** - Scale optimization (100K+ users)
-- **v3.2.0** - Waifu experience systems
+- **v3.3.0** - Scale optimization, security fixes (100K+ users)
 
 ---
 

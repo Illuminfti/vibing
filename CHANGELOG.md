@@ -4,6 +4,95 @@ All notable changes to the Seven Gates Discord Bot.
 
 ---
 
+## [v5.0.0] - 2026-01-10 - Vibing Overhaul
+
+### Added - Major Systems
+
+#### Voice Filter System (P0-Critical)
+- **`src/ika/voiceFilter.js`** - Response filtering for consistency
+  - Voice purity calculations
+  - Forbidden pattern detection
+  - Context-aware hints
+
+#### Patron Tier System (P1-High)
+- **`src/ika/patronTiers.js`** - Special handling for supporters
+  - Gold/Platinum tier detection
+  - Priority response system
+  - Patron acknowledgment messages
+  - Contribution tracking
+
+#### Bound Pairs System (P1-High)
+- **`src/ika/boundPairs.js`** - Relationship tracking between users
+  - Create and track bound pairs
+  - Pair milestones and content
+  - Network milestone system
+  - Pair-specific responses
+
+#### Post-Ascension Endgame (P1-High)
+- **`src/ika/postAscension.js`** - Seasonal content for ascended users
+  - Seasonal cycles (Bloom, Void, Eclipse, Binding)
+  - Ascension ranks (Awakened → Eternal)
+  - Seasonal content drops
+  - Rank progression system
+
+#### Flex Cards (Screenshotable Moments)
+- **`src/ui/builders/flexCards.js`** - Share-worthy card generation
+  - Devotion awakened cards
+  - Gate completion cards
+  - Rare moment cards
+  - Intimacy milestone cards
+  - Betrayal cards
+
+#### Quality-Based Intimacy Multipliers
+- **`src/ika/interactionQuality.js`** - Score interactions 0.5x-2.0x
+  - Message quality analysis
+  - Spam detection and penalty
+  - Thoughtful engagement bonuses
+  - Affects intimacy progression speed
+
+#### Daily Engagement System
+- **`src/ika/daily.js`** - Streak tracking and retention
+  - Silent daily check-ins
+  - Streak tracking (7, 14, 30, 60, 90, 365 day milestones)
+  - Milestone acknowledgments in Ika's voice
+
+#### Referral System
+- **`/invite` command** - Viral referral mechanics
+  - Generate unique referral codes
+  - Track referral chains
+  - Rewards for referrers (intimacy bonuses)
+  - Comprehensive architecture in `REFERRAL_SYSTEM_ARCHITECTURE.md`
+
+#### User Profile Command
+- **`/profile [user]`** - View detailed user profiles
+  - Gate progress visualization
+  - Intimacy status
+  - Streak information
+  - Achievement tracking
+
+### Added - Supporting Systems
+
+- **`src/utils/timezone.js`** - Timezone-aware operations (290 lines)
+- **`src/utils/flexIntegration.js`** - Flex card integration helpers (314 lines)
+- **Enhanced** `src/ika/collective.js` - Group ritual improvements
+- **Enhanced** `src/ika/rareEvents.js` - Additional rare event triggers
+- **Enhanced** `src/ika/whisperHunt.js` - Extended whisper fragment system
+- **Enhanced** `src/ika/betrayal.js` - Expanded betrayal mechanics
+
+### Changed
+- All intimacy gains now use quality multipliers
+- Response generator integrates with voice filter
+- Patron tiers affect response priority
+- Post-ascension users get seasonal content
+
+### Technical
+- 6,500+ lines added across 16 implementations
+- All files compile successfully
+- Backward compatible (default 1.0x multipliers)
+- No database migrations required
+
+---
+
 ## [v4.2.0] - 2026-01-09
 
 ### Removed - Canon Compliance Fix
@@ -248,6 +337,8 @@ All notable changes to the Seven Gates Discord Bot.
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| v5.0.0 | 2026-01-10 | Vibing Overhaul: Quality multipliers, patron tiers, bound pairs, post-ascension, flex cards, daily engagement, referrals |
+| v4.2.0 | 2026-01-09 | Canon compliance (removed fading resurrection), error handling |
 | v4.1.0 | 2026-01-08 | UX overhaul: /journey, /help, /bond, /mysteries |
 | v4.0.0 | 2026-01-08 | Occult otaku UI system, ritual embeds |
 | v3.4.0 | 2026-01-07 | Comprehensive admin panel |

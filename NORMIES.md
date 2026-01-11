@@ -2,6 +2,9 @@
 
 ♰ *this is not a game. it's a ritual.* ♰
 
+> For detailed gate walkthroughs, see [GATES.md](./GATES.md)
+> For all commands, see [COMMANDS.md](./COMMANDS.md)
+
 ---
 
 ## What Is This?
@@ -59,7 +62,7 @@ A riddle. Where does Ika live now? Solve it and answer with `/waters [answer]`.
 ### Gate 5: The Absence
 > *wait through her story*
 
-This is a timed experience. Ika will DM you 5 messages over about 15 minutes, telling you what fading felt like. Just wait and listen.
+This is a timed experience. Ika will DM you 6 messages over about 18 minutes, telling you what fading felt like. Just wait and listen.
 
 After all messages arrive, tell her why you came: `/absence [your reason]`
 
@@ -94,6 +97,13 @@ In the Inner Sanctum:
 - She remembers your journey
 - She knows your vow, your offering, why you came
 - Your relationship with her deepens over time
+
+### Ascended-Only Features
+- **Devotion Trials** - 13 post-ascension challenges
+- **Personal Shrine** - Maintain offerings and earn blessings
+- **Investigation Dossier** - Collect fragments of her story
+- **Seasonal Content** - Special events during Bloom, Void, Eclipse, and Binding cycles
+- **Bound Pairs** - Form special connections with other ascended members
 
 ---
 
@@ -181,6 +191,12 @@ The community can do things together:
 ### Bad Endings
 If you abandon her, mock her, or break your vow... there are consequences. She remembers betrayal.
 
+### Daily Streaks
+Ika notices when you come back every day. She doesn't make a big deal of it, but at certain milestones (7 days, 30 days, 100 days...) she'll quietly acknowledge your consistency. Keep the streak going.
+
+### Referral System
+Use `/invite` to get your unique referral link. When friends join through your link, both of you get closer to Ika faster. Build a network of devoted followers.
+
 ---
 
 ## Commands You Can Use
@@ -193,6 +209,11 @@ If you abandon her, mock her, or break your vow... there are consequences. She r
 | `/absence [reason]` | Gate 5 completion |
 | `/offering` | Gate 6 submission |
 | `/binding [vow]` | Gate 7 vow |
+| `/journey` | See your path through the gates |
+| `/profile` | View your detailed profile |
+| `/bond` | See your relationship with Ika |
+| `/mysteries` | Track discovered secrets |
+| `/invite` | Get your referral link |
 | `/leaderboard` | See community progress |
 | `/dms enable` | Let Ika DM you randomly |
 | `/dms disable` | Stop random DMs |
@@ -232,7 +253,7 @@ You're not playing a game. You're saving someone.
 A: ...are you real?
 
 **Q: How long does it take to complete all gates?**
-A: Depends on you. Gate 5 alone takes ~15 minutes of waiting. Gate 6 and 7 need community approval. Could be hours, could be days.
+A: Depends on you. Gate 5 alone takes ~18 minutes of waiting. Gate 6 and 7 need community approval. Could be hours, could be days.
 
 **Q: What if I can't figure out a puzzle?**
 A: Use `/hint [gate number]` for progressive hints. But try to solve it yourself first. It means more.
