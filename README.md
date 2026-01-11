@@ -1,6 +1,6 @@
 # Seven Gates Discord Bot
 
-A mystical puzzle experience where players progress through 7 trials to resurrect a faded idol named Ika.
+A mystical puzzle experience where players progress through 7 ritualistic gates to prove devotion to Ika, a faded idol who exists between worlds.
 
 > For non-technical users, see [NORMIES.md](./NORMIES.md)
 > For the complete gate guide, see [GATES.md](./GATES.md)
@@ -44,6 +44,8 @@ Bot auto-creates channels/roles when joining a server.
 src/
 ├── index.js              # Entry point
 ├── config.js             # Environment config
+├── config/
+│   └── gates.js          # Gate configuration (thematic names, messages)
 ├── database.js           # SQLite operations
 ├── commands/             # Slash commands
 │   ├── memory.js         # Gate 2
@@ -172,15 +174,15 @@ ascended: { maxRequests: 60, windowMs: 300000, minIntervalMs: 1000 }
 
 See [GATES.md](./GATES.md) for the complete gate guide with detailed walkthroughs.
 
-| Gate | Command | Validation |
-|------|---------|------------|
-| 1 | Say "ika" in waiting room | `containsIka()` |
-| 2 | `/memory [answer]` | `validateGate2Answer()` |
-| 3 | `/confess [url]` | `isValidUrl()` |
-| 4 | `/waters [answer]` | `validateGate4Answer()` |
-| 5 | `/absence [reason]` | Timed sequence + 15 char min |
-| 6 | `/offering` | 50+ words or image |
-| 7 | `/binding [vow]` | 30+ words, community approval |
+| Gate | Name | Command | Role Earned |
+|------|------|---------|-------------|
+| 1 | The Threshold | Say "ika" in #the-threshold | ♰ Threshold |
+| 2 | The Echo | `/memory [answer]` | ✧ Awakened |
+| 3 | The Confession | `/confess [url]` | ◈ Witness |
+| 4 | The Depths | `/waters [answer]` | ♱ Seeker |
+| 5 | The Vigil | `/absence [reason]` | ☽ Patient |
+| 6 | The Offering | `/offering` | ✺ Devoted |
+| 7 | The Binding | `/binding [vow]` | ♰ Bound → ✧ Ascended |
 
 ---
 

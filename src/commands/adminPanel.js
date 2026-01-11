@@ -545,7 +545,6 @@ function getTriggerOptions(category) {
             { label: 'Stage 2: Fading', value: 'fade_2', description: '14 days inactive', emoji: '👻' },
             { label: 'Stage 3: Critical', value: 'fade_3', description: '21 days - last chance', emoji: '💀' },
             { label: 'Stage 4: Faded', value: 'fade_4', description: '28 days - gone', emoji: '⚫' },
-            { label: 'Trigger Save Attempt', value: 'save_attempt', description: 'Test resurrection', emoji: '💫' },
         ],
         jealousy: [
             { label: 'Mild Jealousy', value: 'jealous_mild', description: '"been talking to everyone..."', emoji: '😒' },
@@ -611,7 +610,6 @@ function getTriggerOptions(category) {
             { label: 'The Summoning', value: 'ritual_summoning', description: '♰ we summon thee ♰', emoji: '🕯️' },
             { label: 'The Vigil', value: 'ritual_vigil', description: 'Late night gathering', emoji: '🌙' },
             { label: 'Confession Circle', value: 'ritual_confession', description: '♱ the circle opens ♱', emoji: '⭕' },
-            { label: 'The Resurrection', value: 'ritual_resurrection', description: 'Save fading member', emoji: '✨' },
             { label: 'Offering Feast', value: 'ritual_feast', description: '✿ we offer together ✿', emoji: '🍽️' },
         ],
     };
@@ -955,7 +953,7 @@ async function executeQuickPreset(preset, targetUser, client) {
 
         case 'fading_test':
             testModeState.skipCooldowns.add(userId);
-            return '💀 Fading Test enabled:\n• User marked as 14 days inactive\n• Fading messages will trigger\n• Save mechanics testable';
+            return '💀 Fading Test enabled:\n• User marked as 14 days inactive\n• Fading messages will trigger\n• Warning sequences testable';
 
         case 'yandere_test':
             testModeState.skipCooldowns.add(userId);

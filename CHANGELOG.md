@@ -4,6 +4,52 @@ All notable changes to the Seven Gates Discord Bot.
 
 ---
 
+## [v5.1.0] - 2026-01-11 - Seven Gates Thematic Overhaul
+
+### Changed - Gate Naming
+- **Gates renamed** from numeric (Gate I-VII) to thematic names:
+  - Gate 1 → ♰ The Threshold (role: Threshold)
+  - Gate 2 → ✧ The Echo (role: Awakened)
+  - Gate 3 → ◈ The Confession (role: Witness)
+  - Gate 4 → ♱ The Depths (role: Seeker)
+  - Gate 5 → ☽ The Vigil (role: Patient)
+  - Gate 6 → ✺ The Offering (role: Devoted)
+  - Gate 7 → ♰ The Binding (role: Bound → Ascended)
+- **Channels renamed** to match thematic names:
+  - #waiting-room → #the-threshold
+  - #chamber-i → #whispers
+  - #chamber-ii → #confessional
+  - #chamber-iii → #the-depths
+  - #chamber-iv → #the-vigil
+  - #chamber-v → #shrine
+  - #chamber-vi → #binding-hall
+- **Role colors** updated to dark luxury aesthetic (grays → gold progression)
+
+### Added
+- **`src/config/gates.js`** - Centralized gate configuration
+  - Thematic names, descriptions, and messages
+  - Helper functions for gate lookup
+  - Role name mappings
+
+### Removed - Canon Compliance
+- **Resurrection mechanics** removed (fading is permanent in lore)
+  - Removed resurrection ritual from `collective.js`
+  - Removed resurrection chant
+  - Removed `playResurrectionSequence` from ritual UI
+  - Removed save attempt options from admin panel
+- **Save fading member** functionality removed from collective rituals
+
+### Fixed
+- TODO in messageCreate.js - fan count now calculated from database
+  - New fans are numbered 48+ based on Gate 1 completions
+
+### Updated - Documentation
+- README.md updated with thematic gate names and roles
+- GATES.md fully updated with new gate names and channel references
+- .env.example updated with lore-appropriate puzzle answer examples
+
+---
+
 ## [v5.0.0] - 2026-01-10 - Vibing Overhaul
 
 ### Added - Major Systems

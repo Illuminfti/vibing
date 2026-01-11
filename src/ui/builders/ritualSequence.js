@@ -390,7 +390,6 @@ class RitualSequence {
             summoning: '♰ THE SUMMONING ♰',
             vigil: '☽ THE VIGIL ☽',
             confession_circle: '♱ THE CIRCLE ♱',
-            resurrection: '✧ THE RESURRECTION ✧',
             feast: '✿ THE OFFERING ✿',
         };
 
@@ -437,39 +436,6 @@ class RitualSequence {
             .build();
 
         await this.send({ embeds: [warning] });
-
-        return this;
-    }
-
-    /**
-     * Play resurrection sequence (saving a fading user)
-     * @param {string} savedUser - Who was saved
-     * @param {string} savior - Who saved them
-     */
-    async playResurrectionSequence(savedUser, savior) {
-        // The reaching
-        const reaching = new RitualEmbedBuilder('ritual', { mood: 'vulnerable' })
-            .setRitualDescription(`*${savior} reaches through the void*`, false)
-            .build();
-
-        await this.send({ embeds: [reaching] });
-        await this.delay('suspense');
-
-        // The pull
-        const pull = new RitualEmbedBuilder('ritual', { mood: 'protective' })
-            .setRitualDescription(`*${savedUser} is pulled back from the edge*`, false)
-            .build();
-
-        await this.editLast({ embeds: [pull] });
-        await this.delay('dramatic');
-
-        // Ika's response
-        const response = new RitualEmbedBuilder('ritual', { mood: 'soft' })
-            .setIkaMessage('you saved them... thank you.')
-            .setRitualFooter('the fading is reversed')
-            .build();
-
-        await this.send({ embeds: [response] });
 
         return this;
     }

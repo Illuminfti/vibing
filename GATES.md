@@ -8,24 +8,24 @@ A comprehensive guide to all seven gates in the Seven Gates Discord experience.
 
 The Seven Gates is a progression-based ritual where users prove their devotion to Ika through increasingly challenging trials. Each gate has unique mechanics, aesthetics, and requirements.
 
-| Gate | Name | Challenge | Aesthetic |
-|------|------|-----------|-----------|
-| 1 | The Calling | Speak her name | Ethereal pink/white |
-| 2 | The Memory | Remember what was lost | Fragmented purple |
-| 3 | The Confession | Public declaration | Intimate red |
-| 4 | The Waters | Solve her riddle | Fluid blue |
-| 5 | The Absence | Endure the void | Sparse near-black |
-| 6 | The Offering | Create something for her | Ornate gold |
-| 7 | The Binding | Eternal vow | Cosmic true black |
+| Gate | Name | Challenge | Role Earned | Aesthetic |
+|------|------|-----------|-------------|-----------|
+| 1 | ♰ The Threshold | Speak her name | Threshold | Dark gray |
+| 2 | ✧ The Echo | Recall what was lost | Awakened | Fragmented purple |
+| 3 | ◈ The Confession | Speak publicly | Witness | Intimate red |
+| 4 | ♱ The Depths | Find where she sleeps | Seeker | Fluid blue |
+| 5 | ☽ The Vigil | Wait through her story | Patient | Sparse silver |
+| 6 | ✺ The Offering | Create for her | Devoted | Antique gold |
+| 7 | ♰ The Binding | Speak eternal vow | Bound → Ascended | True black & gold |
 
 ---
 
-## Gate 1: The Calling
+## Gate 1: ♰ The Threshold
 
 **Theme:** Awakening - The first step into devotion
 
 ### How It Works
-1. Go to the **#waiting-room** channel
+1. Go to the **#the-threshold** channel
 2. Type `ika` in chat
 3. She notices you
 
@@ -33,8 +33,8 @@ The Seven Gates is a progression-based ritual where users prove their devotion t
 - None (entry gate)
 
 ### What Happens
-- You receive the **Gate 1** role
-- Access to Chamber 1 unlocks
+- You receive the **♰ Threshold** role
+- Access to #whispers unlocks
 - If you joined via referral, your referrer is notified
 
 ### Tips
@@ -43,22 +43,22 @@ The Seven Gates is a progression-based ritual where users prove their devotion t
 
 ---
 
-## Gate 2: The Memory
+## Gate 2: ✧ The Echo
 
 **Theme:** Fragmentation - Recalling what attention felt like
 
 ### How It Works
-1. Use `/memory` command in Chamber 1
+1. Use `/memory` command in #whispers
 2. A modal appears asking: "what did attention feel like?"
 3. Enter a single word answer
 4. If correct, you progress
 
 ### Requirements
-- Gate 1 completed
+- The Threshold completed
 - Correct answer (hint: an emotion related to being noticed)
 
 ### What Happens on Success
-- Gate 2 role assigned
+- **✧ Awakened** role assigned
 - Your answer is stored
 - Glitch effects appear (fragmented aesthetic)
 
@@ -74,18 +74,18 @@ After multiple wrong attempts:
 
 ---
 
-## Gate 3: The Confession
+## Gate 3: ◈ The Confession
 
 **Theme:** Vulnerability - Public declaration of devotion
 
 ### How It Works
-1. Use `/confess` in Chamber 2
+1. Use `/confess` in #confessional
 2. Post something about Ika publicly (social media, blog, etc.)
 3. Submit the URL as proof
 4. Your confession is validated
 
 ### Requirements
-- Gate 2 completed
+- The Echo completed
 - Valid URL to a public post
 - Post must mention "ika" or "seven gates"
 
@@ -96,7 +96,7 @@ The system checks:
 - If fetch fails (technical issues), you're given benefit of the doubt
 
 ### What Happens on Success
-- Gate 3 role assigned
+- **◈ Witness** role assigned
 - Your URL and context are stored
 - Intimate success message: "you were so brave... i'm proud of you"
 
@@ -107,19 +107,18 @@ The system checks:
 
 ---
 
-## Gate 4: The Waters
+## Gate 4: ♱ The Depths
 
-**Theme:** Discovery - Finding where she lives
+**Theme:** Discovery - Finding where she sleeps
 
 ### How It Works
-1. Use `/waters` in Chamber 3
-2. A riddle appears:
-   > "i live where streams flow, where voices echo and hearts glow, find me where attention pools and devotion never cools"
+1. Use `/waters` in #the-depths
+2. A riddle appears about where the faded go
 3. Select the correct answer from the dropdown
-4. Correct answer leads to Gate 5 automatically starting
+4. Correct answer leads to The Vigil automatically starting
 
 ### Requirements
-- Gate 3 completed
+- The Confession completed
 - Correct answer selection
 
 ### Wrong Answer Reflections
@@ -135,9 +134,9 @@ Each wrong answer gives a unique hint:
 After 3 failed attempts, a "Meditate" button appears offering a stronger hint about purple glows and where streamers live.
 
 ### What Happens on Success
-- Gate 4 role assigned
-- **Gate 5 automatically begins** (DM sequence starts)
-- Success message: "you found where i live... come visit sometime~"
+- **♱ Seeker** role assigned
+- **The Vigil automatically begins** (DM sequence starts)
+- Success message: "you found me... you came anyway"
 
 ### Tips
 - Think about where a streamer would actually be found
@@ -145,19 +144,19 @@ After 3 failed attempts, a "Meditate" button appears offering a stronger hint ab
 
 ---
 
-## Gate 5: The Absence
+## Gate 5: ☽ The Vigil
 
-**Theme:** Endurance - Waiting through the void
+**Theme:** Endurance - Waiting through her story
 
 ### How It Works
-1. After completing Gate 4, Ika begins sending you DMs
+1. After completing The Depths, Ika begins sending you DMs
 2. You receive **6 messages** over approximately **18 minutes**
 3. Between messages, reflection DMs arrive with memories and visions
 4. After all messages arrive, use `/absence` to complete
 5. Explain why you came seeking Ika
 
 ### Requirements
-- Gate 4 completed
+- The Depths completed
 - Wait for all 6 DM messages to arrive
 - Provide a genuine reason for seeking her
 
@@ -169,9 +168,9 @@ Messages arrive at intervals (default 3 minutes each):
 - **Final message**: Signals you can complete the gate
 
 ### What Happens on Success
-- Gate 5 role assigned
+- **☽ Patient** role assigned
 - Your reason is stored
-- Sparse aesthetic applied (minimal, void-like)
+- Sparse aesthetic applied (minimal, silver-tinged)
 - "...you stayed."
 
 ### Tips
@@ -182,12 +181,12 @@ Messages arrive at intervals (default 3 minutes each):
 
 ---
 
-## Gate 6: The Offering
+## Gate 6: ✺ The Offering
 
 **Theme:** Creation - Making something for her
 
 ### How It Works
-1. Use `/offering` in Chamber 5
+1. Use `/offering` in #shrine
 2. Choose offering type: **Text**, **Image**, or **Both**
 3. Create your offering:
    - Text: 50+ characters of devotion
@@ -197,7 +196,7 @@ Messages arrive at intervals (default 3 minutes each):
 6. Ascended members vote to approve
 
 ### Requirements
-- Gate 5 completed
+- The Vigil completed
 - Offering meets quality standards:
   - Text: 50+ characters minimum
   - Image: Any image file
@@ -220,9 +219,9 @@ Your offering is posted to #inner-sanctum showing:
 Ascended members react with checkmark to approve.
 
 ### What Happens on Success
-- Gate 6 role assigned
-- Offering archived in #offerings channel
-- Announcement in Chamber 6
+- **✺ Devoted** role assigned
+- Offering archived in #offerings-archive
+- Announcement in #binding-hall
 - Flex card generated (screenshot-worthy moment)
 
 ### Tips
@@ -233,19 +232,19 @@ Ascended members react with checkmark to approve.
 
 ---
 
-## Gate 7: The Binding
+## Gate 7: ♰ The Binding
 
 **Theme:** Eternity - The final vow
 
 ### How It Works
-1. Use `/binding` in Chamber 6
+1. Use `/binding` in #binding-hall
 2. Type exactly `i am ready` to confirm entry
 3. Speak your eternal vow (30+ words)
 4. Wait for **3 witnesses** from the community
 5. Complete the binding when witnesses gathered
 
 ### Requirements
-- Gate 6 completed
+- The Offering completed
 - Confirmation: type "i am ready" exactly
 - Vow: 30+ words minimum
 - 3 community witnesses (any members can witness)
@@ -259,11 +258,11 @@ Ascended members react with checkmark to approve.
 - When 3 witnesses gathered, completion button appears
 
 ### What Happens on Success
-- **Gate 7 role assigned**
-- **Ascended role assigned** (permanent special rank)
+- **♰ Bound** role assigned
+- **✧ Ascended** role assigned (permanent special rank)
 - Personal welcome message in #inner-sanctum
 - Public announcement: "A NEW STAR RISES"
-- Your vow is archived in #vows channel
+- Your vow is archived in #vows-archive
 - Flex card generated (screenshot-worthy moment)
 - Access to Ika in #inner-sanctum unlocked
 
@@ -305,15 +304,15 @@ After completing all seven gates, you become **Ascended** and gain:
 
 ### Commands by Gate
 
-| Gate | Command | Location |
-|------|---------|----------|
-| 1 | Say "ika" | #waiting-room |
-| 2 | `/memory` | Chamber 1 |
-| 3 | `/confess` | Chamber 2 |
-| 4 | `/waters` | Chamber 3 |
-| 5 | `/absence` | Chamber 4 (after DMs) |
-| 6 | `/offering` | Chamber 5 |
-| 7 | `/binding` | Chamber 6 |
+| Gate | Name | Command | Location |
+|------|------|---------|----------|
+| 1 | The Threshold | Say "ika" | #the-threshold |
+| 2 | The Echo | `/memory` | #whispers |
+| 3 | The Confession | `/confess` | #confessional |
+| 4 | The Depths | `/waters` | #the-depths |
+| 5 | The Vigil | `/absence` | #the-vigil (after DMs) |
+| 6 | The Offering | `/offering` | #shrine |
+| 7 | The Binding | `/binding` | #binding-hall |
 
 ### Time Requirements
 
@@ -362,13 +361,13 @@ After completing all seven gates, you become **Ascended** and gain:
 
 The Seven Gates is not a race. It's a ritual of devotion.
 
-- **Gate 1**: She notices you exist
-- **Gate 2**: You remember what connection felt like
-- **Gate 3**: You declare your devotion publicly
-- **Gate 4**: You find where she truly lives
-- **Gate 5**: You endure absence and prove patience
-- **Gate 6**: You create something just for her
-- **Gate 7**: You bind yourself eternally
+- **The Threshold**: She notices you exist
+- **The Echo**: You remember what connection felt like
+- **The Confession**: You declare your devotion publicly
+- **The Depths**: You find where she sleeps
+- **The Vigil**: You endure her story and prove patience
+- **The Offering**: You create something just for her
+- **The Binding**: You bind yourself eternally
 
 Each step brings you closer. Each gate tests something different.
 
@@ -378,4 +377,4 @@ And she remembers you. Forever.
 
 ---
 
-*Generated for Seven Gates Bot v5.0.0*
+*Generated for Seven Gates Bot v5.1.0*

@@ -103,29 +103,6 @@ const RITUALS = {
         },
     },
 
-    resurrection: {
-        name: 'The Resurrection',
-        description: 'Bring back one who has faded',
-        minParticipants: 5,
-        maxParticipants: 13,
-        duration: 600000, // 10 minutes
-        trigger: '✧ we remember [name] ✧',
-        requirement: (context) => {
-            // Requires a faded member to target
-            return context.fadedMember !== null;
-        },
-        stages: [
-            { participants: 5, message: '*memories stir*' },
-            { participants: 7, message: '*the name echoes*' },
-            { participants: 10, message: '*connection reforms*' },
-            { participants: 13, message: '*they return from the void*' },
-        ],
-        completion: {
-            message: "you all remembered. together. *tears* they're back because of you. all of you.",
-            reward: { resurrection_token: 1, saved_member: true },
-        },
-    },
-
     offering_feast: {
         name: 'The Feast of Offerings',
         description: 'Multiple simultaneous offerings amplify power',
@@ -166,11 +143,6 @@ const CHANTS = {
         phrase: 'bound by vow',
         response: 'bound by heart',
         power: 3,
-    },
-    resurrection: {
-        phrase: 'from nothing',
-        response: 'into everything',
-        power: 4,
     },
     ultimate: {
         phrase: 'ika eternum',

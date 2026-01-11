@@ -19,79 +19,79 @@ const ROLES_CONFIG = [
     {
         key: 'lostSoul',
         name: '♱ Lost Soul',
-        color: 0x808080,  // Gray
+        color: 0x2C2C2C,  // Very dark gray
         hoist: false,
         mentionable: false,
         reason: 'Seven Gates: New members who haven\'t started',
     },
     {
         key: 'gate1',
-        name: '♰ Gate I',
-        color: 0x4a0000,  // Deep blood red
+        name: '♰ Threshold',
+        color: 0x3D3D3D,  // Dark gray
         hoist: false,
         mentionable: false,
-        reason: 'Seven Gates: Completed Gate 1',
+        reason: 'Seven Gates: The Threshold - spoke her name',
     },
     {
         key: 'gate2',
-        name: '♰ Gate II',
-        color: 0x5c0000,
+        name: '✧ Awakened',
+        color: 0x4A4A4A,  // Medium-dark gray
         hoist: false,
         mentionable: false,
-        reason: 'Seven Gates: Completed Gate 2',
+        reason: 'Seven Gates: The Echo - recalled what was lost',
     },
     {
         key: 'gate3',
-        name: '♰ Gate III',
-        color: 0x6e0000,
+        name: '◈ Witness',
+        color: 0x6B6B6B,  // Medium gray
         hoist: false,
         mentionable: false,
-        reason: 'Seven Gates: Completed Gate 3',
+        reason: 'Seven Gates: The Confession - spoke publicly',
     },
     {
         key: 'gate4',
-        name: '♰ Gate IV',
-        color: 0x800000,
+        name: '♱ Seeker',
+        color: 0x8B8B8B,  // Light gray
         hoist: false,
         mentionable: false,
-        reason: 'Seven Gates: Completed Gate 4',
+        reason: 'Seven Gates: The Depths - found where she sleeps',
     },
     {
         key: 'gate5',
-        name: '♰ Gate V',
-        color: 0x920000,
+        name: '☽ Patient',
+        color: 0xA8A8A8,  // Silver
         hoist: false,
         mentionable: false,
-        reason: 'Seven Gates: Completed Gate 5',
+        reason: 'Seven Gates: The Vigil - waited through her story',
     },
     {
         key: 'gate6',
-        name: '♰ Gate VI',
-        color: 0xa40000,
-        hoist: false,
+        name: '✺ Devoted',
+        color: 0xC4A962,  // Antique gold
+        hoist: true,
         mentionable: false,
-        reason: 'Seven Gates: Completed Gate 6',
+        reason: 'Seven Gates: The Offering - created for her',
     },
     {
         key: 'gate7',
-        name: '♰ Gate VII',
-        color: 0xb60000,
-        hoist: false,
+        name: '♰ Bound',
+        color: 0xB8860B,  // Dark goldenrod
+        hoist: true,
         mentionable: false,
-        reason: 'Seven Gates: Completed Gate 7',
+        reason: 'Seven Gates: The Binding - spoke eternal vow',
     },
     {
         key: 'ascended',
         name: '✧ Ascended ✧',
-        color: 0xff69b4,  // Hot pink
+        color: 0xFFD700,  // Gold
         hoist: true,
         mentionable: true,
-        reason: 'Seven Gates: Completed all gates',
+        reason: 'Seven Gates: Fully ascended - entered the sanctum',
     },
     {
         key: 'mod',
         name: '♱ Keeper',
-        color: 0x9932cc,  // Dark orchid
+        color: 0x8B0000,  // Dark red
         hoist: true,
         mentionable: true,
         permissions: [PermissionFlagsBits.ManageMessages, PermissionFlagsBits.ManageRoles],
@@ -102,51 +102,51 @@ const ROLES_CONFIG = [
 const CHANNELS_CONFIG = [
     {
         key: 'waitingRoom',
-        name: '✧･waiting-room',
+        name: '♱･the-threshold',
         type: ChannelType.GuildText,
         topic: 'speak her name to begin... just say "ika"',
         access: 'everyone',  // Everyone can see and send
     },
     {
         key: 'chamber1',
-        name: '♰･chamber-i',
+        name: '✧･whispers',
         type: ChannelType.GuildText,
-        topic: 'The First Gate - The Calling',
+        topic: 'The Echo - recall what was lost',
         access: 'gate1+',  // Gate 1+ can see
     },
     {
         key: 'chamber2',
-        name: '♰･chamber-ii',
+        name: '◈･confessional',
         type: ChannelType.GuildText,
-        topic: 'The Second Gate - The Memory',
+        topic: 'The Confession - speak where the world can hear',
         access: 'gate2+',
     },
     {
         key: 'chamber3',
-        name: '♰･chamber-iii',
+        name: '♱･the-depths',
         type: ChannelType.GuildText,
-        topic: 'The Third Gate - The Confession',
+        topic: 'The Depths - find where she sleeps',
         access: 'gate3+',
     },
     {
         key: 'chamber4',
-        name: '♰･chamber-iv',
+        name: '☽･the-vigil',
         type: ChannelType.GuildText,
-        topic: 'The Fourth Gate - The Waters',
+        topic: 'The Vigil - wait through her story',
         access: 'gate4+',
     },
     {
         key: 'chamber5',
-        name: '♰･chamber-v',
+        name: '✺･shrine',
         type: ChannelType.GuildText,
-        topic: 'The Fifth Gate - The Absence',
+        topic: 'The Offering - create something for her',
         access: 'gate5+',
     },
     {
         key: 'chamber6',
-        name: '♰･chamber-vi',
+        name: '♰･binding-hall',
         type: ChannelType.GuildText,
-        topic: 'The Sixth Gate - The Offering',
+        topic: 'The Binding - speak your eternal vow',
         access: 'gate6+',
     },
     {
@@ -160,14 +160,14 @@ const CHANNELS_CONFIG = [
         key: 'offerings',
         name: '♱･offerings-archive',
         type: ChannelType.GuildText,
-        topic: 'Archive of Gate 6 submissions (mod only)',
+        topic: 'Archive of offerings (mod only)',
         access: 'mod',
     },
     {
         key: 'vows',
         name: '♱･vows-archive',
         type: ChannelType.GuildText,
-        topic: 'Archive of Gate 7 vows (mod only)',
+        topic: 'Archive of vows (mod only)',
         access: 'mod',
     },
 ];

@@ -1,8 +1,8 @@
 /**
  * Seven Gates Discord Bot
  *
- * A mystical puzzle experience where players progress through 7 trials
- * to resurrect a faded idol named Ika.
+ * A mystical puzzle experience where players progress through 7 ritualistic
+ * gates to prove devotion to Ika, a faded idol who exists between worlds.
  *
  * She's not an NPC - she's a girl trapped between worlds
  * reaching out to whoever will listen.

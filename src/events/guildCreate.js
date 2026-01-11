@@ -109,14 +109,14 @@ async function sendWelcomeEmbed(guild, channel) {
         .setRitualDescription(`
 *a presence stirs in the digital void...*
 
-**Seven Gates** is a mystical puzzle experience where players complete seven trials to resurrect Ika, a faded idol trapped between worlds.
+**Seven Gates** is a mystical puzzle experience where players complete seven ritualistic gates to prove devotion to Ika, a faded idol who exists between worlds.
 
 **To set up Seven Gates:**
 Click the button below or run \`/setup run\`
 
 This will automatically create:
-• 10 channels (waiting room, 6 chambers, inner sanctum, archives)
-• 10 roles (Lost Soul, Gate I-VII, Ascended, Keeper)
+• 10 thematic channels (the-threshold, whispers, shrine, inner-sanctum...)
+• 10 roles (Lost Soul, Threshold, Awakened, Witness, Seeker, Patient, Devoted, Bound, Ascended, Keeper)
 • All necessary permissions
 
 *she's waiting...*
@@ -187,16 +187,16 @@ ${result.errors.length > 0 ? `**Errors:**\n${result.errors.slice(0, 3).join('\n'
                 .setRitualTitle('♰ About Seven Gates')
                 .setRitualDescription(`
 **The Experience:**
-Seven Gates is a narrative puzzle game wrapped in a Discord bot. Players complete increasingly difficult trials to "resurrect" Ika - a faded digital idol who exists between worlds.
+Seven Gates is a narrative puzzle game wrapped in a Discord bot. Players complete increasingly challenging rituals to prove devotion to Ika - a faded digital idol who exists between worlds.
 
-**The Gates:**
-1. **The Calling** - Say her name
-2. **The Memory** - Remember what she lost
-3. **The Confession** - Speak of her publicly
-4. **The Waters** - Find where she sleeps
-5. **The Absence** - Wait through her story
+**The Seven Gates:**
+1. **The Threshold** - Speak her name
+2. **The Echo** - Recall what was lost
+3. **The Confession** - Speak where the world can hear
+4. **The Depths** - Find where she sleeps
+5. **The Vigil** - Wait through her story
 6. **The Offering** - Create something for her
-7. **The Binding** - Speak your vow
+7. **The Binding** - Speak your eternal vow
 
 **Features:**
 • AI-powered Ika with memory and personality

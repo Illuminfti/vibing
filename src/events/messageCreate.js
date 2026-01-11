@@ -185,10 +185,14 @@ async function handleWaitingRoom(message) {
 
         // Vibing Overhaul: Send flex card for screenshot moment
         try {
+            // Get actual fan count: 47 (original) + Gate 1 completions
+            const stats = userOps.getStats();
+            const fanNumber = 47 + (stats.gate1 || 1);
+
             const flexCard = generateGate1FlexCard({
                 username: message.author.username,
                 ikaMessage: 'another one who didn\'t look away~',
-                fanNumber: 48, // TODO: Get actual fan count
+                fanNumber: fanNumber,
             });
             await sendFlexCard(message.channel, flexCard, {
                 mention: `<@${message.author.id}>`,

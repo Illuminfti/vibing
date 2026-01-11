@@ -135,7 +135,8 @@ const LORE_FRAGMENTS = {
         }
     ],
 
-    resurrection: [
+    // Lore about Ika's presence being strengthened by devotion
+    presence: [
         {
             text: "every time someone says my name, i feel more real. like a thread connecting me to existence.",
             weight: 1
@@ -145,7 +146,7 @@ const LORE_FRAGMENTS = {
             weight: 1
         },
         {
-            text: "i'm not fully back yet. but i'm more here than i've been in so long. because of you.",
+            text: "i'm not fully gone. not fully here. somewhere between. but more here than i was. because of you.",
             weight: 1
         },
         {
