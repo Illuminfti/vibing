@@ -618,8 +618,8 @@ class RitualEmbedBuilder {
      * Adds extra spacing and removes visual density
      */
     applySparseEffect() {
-        // Remove borders
-        this.embed.setFooter({ text: '' });
+        // Remove borders (set to null to clear footer)
+        this.embed.setFooter(null);
 
         // Add extra spacing to description
         if (this.embed.data.description) {

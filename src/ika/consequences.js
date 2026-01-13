@@ -348,8 +348,7 @@ function decayConsequences(userId) {
     if (hoursSinceActive < 1) {
         // Reduce ignored DMs counter slowly
         if (memory.ignored_dms > 0) {
-            // This would update the database
-            // ikaMemoryOps.update(userId, 'ignored_dms', Math.max(0, memory.ignored_dms - 1));
+            ikaMemoryOps.update(userId, { ignored_dms: Math.max(0, memory.ignored_dms - 1) });
         }
     }
 }
