@@ -115,5 +115,4 @@ module.exports = {
     getFragmentMessage,
     processPendingFragments,
     sendFragment,
-    FRAGMENT_MESSAGES,
 };

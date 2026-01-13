@@ -218,8 +218,6 @@ module.exports = {
     MOODS,
     getCurrentMood,
     getMoodModifiers,
-    getTimeMoodTendency,
-    analyzeContextForMood,
     isWitchingHour,
     forceMood,
     weightedRandom,
