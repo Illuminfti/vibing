@@ -7,7 +7,7 @@
 
 const config = require('../../config');
 const messages = require('../../assets/messages');
-const { userOps, gate7Ops } = require('../../database');
+const { userOps } = require('../../database');
 const { assignGateRole, hasRole } = require('../../utils/roles');
 const { responseDelay } = require('../../utils/timing');
 const { maybeGlitch } = require('../../utils/zalgo');
@@ -28,8 +28,24 @@ const { AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = requ
 // Required witness count
 const WITNESS_REQUIRED = 3;
 
-// Store pending bindings (pendingId -> { userId, vow, witnesses: Set })
+// Store pending bindings (pendingId -> { userId, vow, witnesses: Set, createdAt })
 const pendingBindings = new Map();
+
+// TTL for pending bindings (24 hours)
+const BINDINGS_TTL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Clean up expired pending bindings
+ */
+function cleanupExpiredBindings() {
+    const now = Date.now();
+    for (const [pendingId, data] of pendingBindings.entries()) {
+        if (data.createdAt && now - data.createdAt > BINDINGS_TTL_MS) {
+            pendingBindings.delete(pendingId);
+            console.log(`✧ Cleaned up expired Gate 7 binding for ${data.username || pendingId}`);
+        }
+    }
+}
 
 /**
  * Start the Gate 7 binding flow
@@ -502,5 +518,6 @@ module.exports = {
     startBinding,
     handleButton,
     handleModal,
+    cleanupExpiredBindings,
     pendingBindings,
 };

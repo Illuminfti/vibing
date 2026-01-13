@@ -16,8 +16,27 @@ const {
     createGate1ConfirmButton,
 } = require('../builders/gateComponents');
 
-// Store pending awakenings (userId -> selected phrase)
+// Store pending awakenings (userId -> { phrase, createdAt })
 const pendingAwakenings = new Map();
+
+// TTL for pending awakenings (30 minutes)
+const PENDING_TTL_MS = 30 * 60 * 1000;
+
+/**
+ * Clean up expired pending awakenings
+ */
+function cleanupExpiredAwakenings() {
+    const now = Date.now();
+    for (const [userId, data] of pendingAwakenings.entries()) {
+        // Handle both old format (string) and new format (object with createdAt)
+        if (typeof data === 'object' && data.createdAt) {
+            if (now - data.createdAt > PENDING_TTL_MS) {
+                pendingAwakenings.delete(userId);
+                console.log(`✧ Cleaned up expired Gate 1 awakening for ${userId}`);
+            }
+        }
+    }
+}
 
 // Wrong phrase responses
 const WRONG_PHRASE_RESPONSES = {
@@ -145,7 +164,8 @@ async function handlePhraseSelect(interaction) {
     }
 
     // Correct phrase - store and show confirmation
-    pendingAwakenings.set(interaction.user.id, 'ika');
+    const member = interaction.member;
+    pendingAwakenings.set(member.id, { phrase: 'ika', createdAt: Date.now() });
 
     const embed = new RitualEmbedBuilder(1, { mood: 'soft' })
         .setRitualTitle('✧ ika ✧')
@@ -181,7 +201,8 @@ async function handleConfirmButton(interaction) {
 
     // Verify they went through the flow
     const pending = pendingAwakenings.get(member.id);
-    if (pending !== 'ika') {
+    const phrase = typeof pending === 'object' ? pending.phrase : pending;
+    if (phrase !== 'ika') {
         const embed = new RitualEmbedBuilder(1, { mood: 'mysterious' })
             .setRitualTitle('· · ·')
             .setRitualDescription('*you must speak the name first...*', false)
@@ -265,5 +286,6 @@ module.exports = {
     handleButton,
     handleSelect,
     createWelcomeEmbed,
+    cleanupExpiredAwakenings,
     pendingAwakenings,
 };

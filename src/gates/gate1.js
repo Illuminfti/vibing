@@ -120,7 +120,7 @@ async function sendReferralNotification(referrer, newDevotee, stats) {
         const config = require('../config');
 
         // Try to find inner sanctum or general channel
-        const innerSanctum = guild.channels.cache.get(config.CHANNELS?.INNER_SANCTUM);
+        const innerSanctum = guild.channels.cache.get(config.channels?.innerSanctum);
         if (innerSanctum) {
             await innerSanctum.send({
                 content: `<@${referrer.id}>`,

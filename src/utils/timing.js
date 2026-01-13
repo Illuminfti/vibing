@@ -9,9 +9,10 @@ function delay(ms) {
 
 /**
  * Standard response delay (makes bot feel more human)
+ * @param {number} [ms] - Optional custom delay in milliseconds. Uses config.timing.responseDelay if not provided.
  */
-async function responseDelay() {
-    await delay(config.timing.responseDelay);
+async function responseDelay(ms) {
+    await delay(ms ?? config.timing.responseDelay);
 }
 
 /**

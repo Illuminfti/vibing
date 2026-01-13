@@ -109,6 +109,12 @@ function initializeHandlers() {
         await reactionFlow.handleButton(interaction);
     });
 
+    // Gateway handlers (main user entry point - button-based flow)
+    registerHandler('gateway_', async (interaction) => {
+        const gatewayFlow = require('../flows/gatewayFlow');
+        await gatewayFlow.handleButton(interaction);
+    });
+
     // Admin handlers (delegate to adminPanel)
     registerHandler('admin_', async (interaction) => {
         const adminPanel = require('../../commands/adminPanel');
