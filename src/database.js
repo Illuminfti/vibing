@@ -104,6 +104,15 @@ db.exec(`
         sent_at DATETIME
     );
 
+    -- Gate 5 vigil tracking (for absence/waiting period)
+    CREATE TABLE IF NOT EXISTS gate5_vigil (
+        discord_id TEXT PRIMARY KEY,
+        reason TEXT,
+        end_time INTEGER,
+        status TEXT DEFAULT 'waiting',
+        started_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     -- Fragment DMs scheduled after gate completions
     CREATE TABLE IF NOT EXISTS fragments (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -731,6 +740,31 @@ const gate5Ops = {
     // Clear schedule for user
     clear(discordId) {
         db.prepare('DELETE FROM gate5_schedule WHERE discord_id = ?').run(discordId);
+    },
+
+    // === VIGIL OPERATIONS (for absence/waiting period) ===
+
+    // Start a vigil for a user
+    startVigil(discordId, reason, endTime) {
+        db.prepare(`
+            INSERT OR REPLACE INTO gate5_vigil (discord_id, reason, end_time, status, started_at)
+            VALUES (?, ?, ?, 'waiting', CURRENT_TIMESTAMP)
+        `).run(discordId, reason, endTime);
+    },
+
+    // Get vigil status for a user
+    getVigilStatus(discordId) {
+        return db.prepare('SELECT * FROM gate5_vigil WHERE discord_id = ?').get(discordId);
+    },
+
+    // Complete a vigil
+    completeVigil(discordId) {
+        db.prepare("UPDATE gate5_vigil SET status = 'complete' WHERE discord_id = ?").run(discordId);
+    },
+
+    // Clear vigil for user (optional cleanup)
+    clearVigil(discordId) {
+        db.prepare('DELETE FROM gate5_vigil WHERE discord_id = ?').run(discordId);
     },
 };
 

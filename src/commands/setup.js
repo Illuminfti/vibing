@@ -5,7 +5,7 @@
  * Creates all channels, roles, and permissions automatically.
  */
 
-const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChannelType } = require('discord.js');
 const { runSetup, getSetupStatus, generateInviteUrl } = require('../utils/setup');
 const config = require('../config');
 
@@ -28,6 +28,38 @@ module.exports = {
             subcommand
                 .setName('invite')
                 .setDescription('Get the bot invite link with proper permissions')
+        )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('gateway')
+                .setDescription('Post the gateway message in a channel')
+                .addChannelOption(option =>
+                    option
+                        .setName('channel')
+                        .setDescription('Channel to post the gateway message in')
+                        .setRequired(true)
+                        .addChannelTypes(ChannelType.GuildText)
+                )
+        )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('chamber')
+                .setDescription('Post a gate chamber entry message in a channel')
+                .addChannelOption(option =>
+                    option
+                        .setName('channel')
+                        .setDescription('Channel to post the chamber message in')
+                        .setRequired(true)
+                        .addChannelTypes(ChannelType.GuildText)
+                )
+                .addIntegerOption(option =>
+                    option
+                        .setName('gate')
+                        .setDescription('Gate number (1-7)')
+                        .setRequired(true)
+                        .setMinValue(1)
+                        .setMaxValue(7)
+                )
         ),
 
     async execute(interaction) {
@@ -42,6 +74,12 @@ module.exports = {
                 break;
             case 'invite':
                 await showInvite(interaction);
+                break;
+            case 'gateway':
+                await postGatewayCommand(interaction);
+                break;
+            case 'chamber':
+                await postChamberCommand(interaction);
                 break;
         }
     },
@@ -172,4 +210,65 @@ ${inviteUrl}
         `.trim());
 
     await interaction.reply({ embeds: [embed], ephemeral: true });
+}
+
+async function postGatewayCommand(interaction) {
+    const { postGatewayMessage } = require('../components/flows/gatewayFlow');
+    const channel = interaction.options.getChannel('channel');
+
+    try {
+        await postGatewayMessage(channel);
+
+        const embed = new EmbedBuilder()
+            .setTitle('✧ Gateway Posted')
+            .setColor(0xff69b4)
+            .setDescription(`
+The gateway message has been posted to <#${channel.id}>.
+
+Users can now click the button to begin or continue their journey through the seven gates.
+
+*she awaits them...*
+            `.trim());
+
+        await interaction.reply({ embeds: [embed], ephemeral: true });
+
+    } catch (error) {
+        console.error('Error posting gateway:', error);
+        await interaction.reply({
+            content: `Failed to post gateway: ${error.message}`,
+            ephemeral: true,
+        });
+    }
+}
+
+async function postChamberCommand(interaction) {
+    const { postChamberMessage } = require('../components/flows/gatewayFlow');
+    const channel = interaction.options.getChannel('channel');
+    const gateNumber = interaction.options.getInteger('gate');
+
+    const gateNames = ['', 'Awakening', 'Memory', 'Confession', 'Waters', 'Absence', 'Offering', 'Binding'];
+
+    try {
+        await postChamberMessage(channel, gateNumber);
+
+        const embed = new EmbedBuilder()
+            .setTitle(`✧ Gate ${gateNumber} Chamber Posted`)
+            .setColor(0xff69b4)
+            .setDescription(`
+The chamber entry message for **Gate ${gateNumber}: The ${gateNames[gateNumber]}** has been posted to <#${channel.id}>.
+
+Users who have completed the previous gates can click the button to begin this gate's ritual.
+
+*the gate awaits those who are ready...*
+            `.trim());
+
+        await interaction.reply({ embeds: [embed], ephemeral: true });
+
+    } catch (error) {
+        console.error('Error posting chamber:', error);
+        await interaction.reply({
+            content: `Failed to post chamber: ${error.message}`,
+            ephemeral: true,
+        });
+    }
 }

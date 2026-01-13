@@ -23,8 +23,24 @@ const path = require('path');
 const fs = require('fs');
 const { AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
-// Store pending offerings (userId -> { type, content, imageUrl })
+// Store pending offerings (userId -> { type, content, imageUrl, createdAt, awaitingImage })
 const pendingOfferings = new Map();
+
+// TTL for pending offerings (1 hour)
+const PENDING_TTL_MS = 60 * 60 * 1000;
+
+/**
+ * Clean up expired pending offerings
+ */
+function cleanupExpiredOfferings() {
+    const now = Date.now();
+    for (const [userId, data] of pendingOfferings.entries()) {
+        if (data.createdAt && now - data.createdAt > PENDING_TTL_MS) {
+            pendingOfferings.delete(userId);
+            console.log(`✧ Cleaned up expired Gate 6 offering for ${userId}`);
+        }
+    }
+}
 
 /**
  * Start the Gate 6 offering flow
@@ -125,7 +141,13 @@ async function handleTypeSelect(interaction) {
     }
 
     // Initialize pending offering
-    pendingOfferings.set(member.id, { type: selected, content: null, imageUrl: null });
+    pendingOfferings.set(member.id, {
+        type: selected,
+        content: null,
+        imageUrl: null,
+        createdAt: Date.now(),
+        awaitingImage: false
+    });
 
     if (selected === 'words' || selected === 'both') {
         // Show modal for words
@@ -182,12 +204,22 @@ async function handleWordsModal(interaction) {
  * Show upload instructions for image
  */
 async function showUploadInstructions(interaction, hasWords = false) {
+    const member = interaction.member;
+
+    // Mark that we're awaiting an image from this user
+    const pending = pendingOfferings.get(member.id);
+    if (pending) {
+        pending.awaitingImage = true;
+        pending.channelId = interaction.channelId;
+        pendingOfferings.set(member.id, pending);
+    }
+
     const embed = new RitualEmbedBuilder(6, { mood: 'ornate' })
         .setRitualTitle('✿ your visual offering ✿')
         .setRitualDescription(
             (hasWords ? '*your words have been received...*\n\n' : '') +
             'now share your visual devotion.\n\n' +
-            '**Reply to this message with your image.**\n\n' +
+            '**Send your image in this channel.**\n\n' +
             '*fan art, edits, photos... anything that shows your love*',
             false
         )
@@ -205,9 +237,6 @@ async function showUploadInstructions(interaction, hasWords = false) {
             ephemeral: true,
         });
     }
-
-    // Note: Image collection would need to be handled via messageCreate event
-    // watching for replies from this user with attachments
 }
 
 /**
@@ -438,10 +467,79 @@ async function postToOfferingsChannel(client, member, offering) {
     }
 }
 
+/**
+ * Handle image upload from messageCreate event
+ * Returns true if the message was handled as a Gate 6 image upload
+ */
+async function handleImageUpload(message) {
+    const userId = message.author.id;
+    const pending = pendingOfferings.get(userId);
+
+    // Check if this user is awaiting an image for Gate 6
+    if (!pending || !pending.awaitingImage) {
+        return false;
+    }
+
+    // Check if message has an image attachment
+    const imageAttachment = message.attachments.find(att =>
+        att.contentType?.startsWith('image/') ||
+        att.url.match(/\.(png|jpg|jpeg|gif|webp)$/i)
+    );
+
+    if (!imageAttachment) {
+        return false;
+    }
+
+    // Store the image URL
+    pending.imageUrl = imageAttachment.url;
+    pending.awaitingImage = false;
+    pendingOfferings.set(userId, pending);
+
+    console.log(`✧ Received Gate 6 image from ${message.author.tag}`);
+
+    // Delete the user's image message to keep channel clean (optional)
+    try {
+        await message.delete();
+    } catch (e) {
+        // May not have permission to delete, that's okay
+    }
+
+    // Send preview
+    const embed = new RitualEmbedBuilder(6, { mood: 'soft' })
+        .setRitualTitle('✿ image received ✿')
+        .setRitualDescription(
+            '*your visual offering has been received*\n\n' +
+            (pending.content ? `Words: ${pending.content.split(/\s+/).length} words\n\n` : '') +
+            '*review your offering before presenting it*',
+            false
+        )
+        .setImage(pending.imageUrl)
+        .build();
+
+    await message.channel.send({
+        content: `<@${userId}>`,
+        embeds: [embed],
+        components: [createGate6PreviewButtons()],
+    });
+
+    return true;
+}
+
+/**
+ * Check if a user is awaiting an image upload
+ */
+function isAwaitingImage(userId) {
+    const pending = pendingOfferings.get(userId);
+    return pending?.awaitingImage === true;
+}
+
 module.exports = {
     startOffering,
     handleButton,
     handleModal,
     handleSelect,
+    handleImageUpload,
+    isAwaitingImage,
+    cleanupExpiredOfferings,
     pendingOfferings,
 };

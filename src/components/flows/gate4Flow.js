@@ -23,8 +23,24 @@ const path = require('path');
 const fs = require('fs');
 const { AttachmentBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
 
-// Track user attempts (userId -> { attempts: number, reflections: string[] })
+// Track user attempts (userId -> { attempts: number, reflections: string[], createdAt: number })
 const userAttempts = new Map();
+
+// TTL for user attempts (24 hours)
+const ATTEMPTS_TTL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Clean up expired user attempts
+ */
+function cleanupExpiredAttempts() {
+    const now = Date.now();
+    for (const [userId, data] of userAttempts.entries()) {
+        if (data.createdAt && now - data.createdAt > ATTEMPTS_TTL_MS) {
+            userAttempts.delete(userId);
+            console.log(`✧ Cleaned up expired Gate 4 attempts for ${userId}`);
+        }
+    }
+}
 
 // Possible answers for the riddle
 const RIDDLE_ANSWERS = [
@@ -69,7 +85,7 @@ async function startWaters(interaction, options = {}) {
     }
 
     // Reset attempts for this session
-    userAttempts.set(member.id, { attempts: 0, reflections: [] });
+    userAttempts.set(member.id, { attempts: 0, reflections: [], createdAt: Date.now() });
 
     const embed = new RitualEmbedBuilder(4, { mood: 'mysterious' })
         .setRitualTitle('༄ The Waters ༄')
@@ -180,7 +196,7 @@ async function handleAnswerSelect(interaction) {
     // Get or create attempt tracking
     let tracking = userAttempts.get(member.id);
     if (!tracking) {
-        tracking = { attempts: 0, reflections: [] };
+        tracking = { attempts: 0, reflections: [], createdAt: Date.now() };
         userAttempts.set(member.id, tracking);
     }
 
@@ -272,7 +288,11 @@ async function handleCorrectAnswer(interaction, member) {
         const imageExists = fs.existsSync(imagePath);
 
         // Complete gate
-        await assignGateRole(member, 4);
+        const roleAssigned = await assignGateRole(member, 4);
+        if (!roleAssigned) {
+            console.error(`✧ Failed to assign Gate 4 role to ${member.user.tag}`);
+            // Continue anyway - role can be manually assigned later
+        }
         const result = userOps.completeGate(member.id, 4, { gate_4_answer: 'twitch' });
 
         if (result.isFirst) {
@@ -330,5 +350,6 @@ module.exports = {
     startWaters,
     handleButton,
     handleSelect,
+    cleanupExpiredAttempts,
     userAttempts,
 };

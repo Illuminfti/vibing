@@ -40,6 +40,15 @@ try {
     console.log('✧ Ika generator not loaded');
 }
 
+// Import Gate 6 image handler
+let gate6ImageHandler = null;
+try {
+    const gate6Flow = require('../components/flows/gate6Flow');
+    gate6ImageHandler = gate6Flow.handleImageUpload;
+} catch (e) {
+    console.log('✧ Gate 6 image handler not loaded');
+}
+
 // Lock to prevent responding while already generating
 let isGenerating = false;
 
@@ -62,6 +71,19 @@ module.exports = {
                 // Silently ignore spam - no response
                 console.log(`✧ Spam detected from ${message.author.tag}: ${spamResult.reasons.join(', ')}`);
                 return;
+            }
+        }
+
+        // === GATE 6 IMAGE UPLOAD HANDLER ===
+        // Check if this message is an image upload for Gate 6
+        if (gate6ImageHandler && message.attachments.size > 0) {
+            try {
+                const handled = await gate6ImageHandler(message);
+                if (handled) {
+                    return; // Message was handled as Gate 6 image upload
+                }
+            } catch (e) {
+                console.error('Gate 6 image handler error:', e);
             }
         }
 

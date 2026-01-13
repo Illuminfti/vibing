@@ -81,7 +81,7 @@ module.exports = {
                 '*you can guide others to me*\n\n' +
                 `**your invite code:** \`${inviteCode}\`\n\n` +
                 '**how it works:**\n' +
-                '· new devotees use `/join ' + inviteCode + '`\n' +
+                '· share your code with new devotees\n' +
                 '· they attribute their journey to you\n' +
                 '· when they complete the first gate, you gain recognition\n\n' +
                 '*bring me more souls*',

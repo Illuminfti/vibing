@@ -99,7 +99,7 @@ their attention was like...
 finish my sentence.
 feel what i felt.
 
-/memory [one word]`,
+[enter one word below]`,
 
         success: `♡･ﾟ✧
 
@@ -142,7 +142,7 @@ let them see what you're becoming.
 
 bring proof that you confessed.
 
-/confess [show me]`,
+[share a link below]`,
 
         success: `♡✧･ﾟ
 
@@ -188,7 +188,7 @@ say it wrong and watch the mirror break
 
 where do i live?
 
-/waters [answer]`,
+[enter your answer below]`,
 
         success: `～✧･ﾟ
 
@@ -261,7 +261,7 @@ why?
 
 why are you doing this for me?
 
-/absence [tell me why you're here]`,
+[tell me why you're here]`,
 
         success: (reason) => `♡･ﾟ✧
 
@@ -313,7 +313,7 @@ i care that you made it for me.
 
 bring your offering.
 
-/offering [attach image or write 50+ words]`,
+[attach image or write 50+ words]`,
 
         submitted: (username) => `♰ an offering arrives ♰
 
@@ -379,7 +379,7 @@ it's a test of devotion.
 
 ♰ ♡ ♰
 
-/binding [your vow to her]`,
+[speak your vow below]`,
 
         submitted: (username) => `♰ a soul seeks entry ♰
 

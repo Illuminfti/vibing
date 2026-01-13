@@ -3,3 +3,9 @@ node_modules/
 data/*.db
 *.log
 .DS_Store
+
+# Auto Claude data directory
+.auto-claude/
+.claude/
+.claude_settings.json
+.worktrees/

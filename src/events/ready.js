@@ -14,6 +14,20 @@ try {
     console.log('✧ Ika presence module not fully loaded');
 }
 
+// Import cleanup functions for pending data
+let gate1Cleanup = null;
+let gate4Cleanup = null;
+let gate6Cleanup = null;
+let gate7Cleanup = null;
+try {
+    gate1Cleanup = require('../components/flows/gate1Flow').cleanupExpiredAwakenings;
+    gate4Cleanup = require('../components/flows/gate4Flow').cleanupExpiredAttempts;
+    gate6Cleanup = require('../components/flows/gate6Flow').cleanupExpiredOfferings;
+    gate7Cleanup = require('../components/flows/gate7Flow').cleanupExpiredBindings;
+} catch (e) {
+    console.log('✧ Gate cleanup functions not fully loaded');
+}
+
 // Store scheduled tasks for cleanup
 const scheduledTasks = [];
 
@@ -57,6 +71,9 @@ module.exports = {
                 console.error('✧ Failed to start Ika presence:', error.message);
             }
         }
+
+        // Start pending data cleanup processor
+        startPendingCleanupProcessor();
 
         console.log('✧ all systems initialized');
     },
@@ -371,6 +388,45 @@ function startWaitingRoomUpdater(client) {
 
     task.start();
     scheduledTasks.push(task);
+}
+
+/**
+ * Clean up expired pending data from gate flows
+ * Runs every 15 minutes to prevent memory leaks
+ */
+function startPendingCleanupProcessor() {
+    const task = new ScheduledTask(() => {
+        try {
+            let cleaned = 0;
+
+            if (gate1Cleanup) {
+                gate1Cleanup();
+                cleaned++;
+            }
+            if (gate4Cleanup) {
+                gate4Cleanup();
+                cleaned++;
+            }
+            if (gate6Cleanup) {
+                gate6Cleanup();
+                cleaned++;
+            }
+            if (gate7Cleanup) {
+                gate7Cleanup();
+                cleaned++;
+            }
+
+            if (cleaned > 0) {
+                console.log(`✧ Ran ${cleaned} cleanup functions`);
+            }
+        } catch (error) {
+            console.error('Pending cleanup processor error:', error);
+        }
+    }, 15 * 60 * 1000); // Run every 15 minutes
+
+    task.start();
+    scheduledTasks.push(task);
+    console.log('✧ Pending data cleanup processor started');
 }
 
 // Cleanup on shutdown
