@@ -1900,24 +1900,6 @@ const dmPrefsOps = {
     },
 };
 
-// Fragment log operations
-const fragmentLogOps = {
-    log(userId, gateNumber, deliveredVia) {
-        db.prepare(`
-            INSERT INTO fragment_log (user_id, gate_number, delivered_via)
-            VALUES (?, ?, ?)
-        `).run(userId, gateNumber, deliveredVia);
-    },
-
-    getForUser(userId) {
-        return db.prepare(`
-            SELECT * FROM fragment_log
-            WHERE user_id = ?
-            ORDER BY timestamp DESC
-        `).all(userId);
-    },
-};
-
 // Gate progress operations (wrapper for gate-related queries)
 const gateOps = {
     // Get current gate (highest completed + 1)
@@ -2190,7 +2172,6 @@ module.exports = {
     // DM LIMITATIONS FIX: New operations
     dmOps,
     dmPrefsOps,
-    fragmentLogOps,
     // REFERRAL SYSTEM (P0-6)
     referralOps,
 };

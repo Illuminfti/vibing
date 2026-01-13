@@ -437,11 +437,11 @@ function completeTrial(userId, trialId) {
     completedTrials.push(trialId);
 
     // Update database
-    // ikaMemoryOps.update(userId, 'completed_trials', JSON.stringify(completedTrials));
+    ikaMemoryOps.update(userId, { completed_trials: JSON.stringify(completedTrials) });
 
     // Apply rewards
     const newIntimacy = (memory.intimacy_stage || 1) + (trial.reward.intimacyBoost / 25);
-    // ikaMemoryOps.update(userId, 'intimacy_stage', Math.min(4, Math.floor(newIntimacy)));
+    ikaMemoryOps.update(userId, { intimacy_stage: Math.min(4, Math.floor(newIntimacy)) });
 
     console.log(`♰ Trial completed: ${userId} finished ${trialId}`);
 

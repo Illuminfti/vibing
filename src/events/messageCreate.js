@@ -207,10 +207,11 @@ async function handleWaitingRoom(message) {
 
         // Vibing Overhaul: Send flex card for screenshot moment
         try {
+            const stats = userOps.getStats();
             const flexCard = generateGate1FlexCard({
                 username: message.author.username,
                 ikaMessage: 'another one who didn\'t look away~',
-                fanNumber: 48, // TODO: Get actual fan count
+                fanNumber: stats.gate1 || 1,
             });
             await sendFlexCard(message.channel, flexCard, {
                 mention: `<@${message.author.id}>`,
@@ -436,7 +437,7 @@ async function reactWithHeart(message) {
  */
 async function postChamberPuzzle(client, chamberNumber, puzzleText) {
     try {
-        const channelId = config.gateChambers[chamberNumber];
+        const channelId = config.getChamber(chamberNumber);
         if (!channelId) return;
 
         const channel = await client.channels.fetch(channelId);

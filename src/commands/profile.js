@@ -17,9 +17,9 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { userOps, ikaMemoryOps } = require('../database');
 const { RitualEmbedBuilder } = require('../ui');
-const { hasRole, isAscended, isMod } = require('../utils/roles');
-const { INTIMACY_STAGES } = require('../ika/intimacy');
+const { hasRole } = require('../utils/roles');
 const config = require('../config');
+const { INTIMACY_STAGES } = require('../ika/intimacy');
 
 // Gate symbols for progress bar
 const GATE_SYMBOLS = {
@@ -115,8 +115,8 @@ module.exports = {
             // Check if viewer has permission to see this profile
             const viewingSelf = viewerId === targetUserId;
             const viewerMember = await interaction.guild.members.fetch(viewerId);
-            const viewerIsAscended = isAscended(viewerMember);
-            const viewerIsMod = isMod(viewerMember);
+            const viewerIsAscended = hasRole(viewerMember, config.roles.ascended);
+            const viewerIsMod = hasRole(viewerMember, config.roles.mod);
 
             const canView = viewingSelf || viewerIsAscended || viewerIsMod;
 

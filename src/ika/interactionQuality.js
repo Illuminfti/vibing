@@ -148,32 +148,26 @@ function hasVariedVocabulary(words) {
     return varietyRatio > 0.6; // At least 60% unique words
 }
 
-/**
- * Get quality tier description for display
- * @param {number} multiplier - Quality multiplier
- * @returns {string} Tier description
- */
-function getQualityTier(multiplier) {
-    if (multiplier >= 1.8) return 'exceptional';
-    if (multiplier >= 1.4) return 'high';
-    if (multiplier >= 1.1) return 'good';
-    if (multiplier >= 0.9) return 'normal';
-    if (multiplier >= 0.7) return 'low';
-    return 'minimal';
+// Quality tiers with thresholds (single source of truth)
+const QUALITY_TIERS = [
+    { min: 1.8, tier: 'exceptional', indicator: '⭐⭐⭐' },
+    { min: 1.4, tier: 'high', indicator: '⭐⭐⭐' },
+    { min: 1.1, tier: 'good', indicator: '⭐⭐' },
+    { min: 0.9, tier: 'normal', indicator: '⭐⭐' },
+    { min: 0.7, tier: 'low', indicator: '⭐' },
+    { min: 0, tier: 'minimal', indicator: '⭐' },
+];
+
+function getQualityInfo(multiplier) {
+    return QUALITY_TIERS.find(t => multiplier >= t.min) || QUALITY_TIERS[QUALITY_TIERS.length - 1];
 }
 
-/**
- * Get visual indicator for quality
- * @param {number} multiplier - Quality multiplier
- * @returns {string} Visual indicator (stars)
- */
+function getQualityTier(multiplier) {
+    return getQualityInfo(multiplier).tier;
+}
+
 function getQualityIndicator(multiplier) {
-    if (multiplier >= 1.8) return '⭐⭐⭐';
-    if (multiplier >= 1.4) return '⭐⭐⭐';
-    if (multiplier >= 1.1) return '⭐⭐';
-    if (multiplier >= 0.9) return '⭐⭐';
-    if (multiplier >= 0.7) return '⭐';
-    return '⭐';
+    return getQualityInfo(multiplier).indicator;
 }
 
 module.exports = {

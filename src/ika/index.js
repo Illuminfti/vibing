@@ -45,7 +45,6 @@ const investigation = require('./investigation');
 const romance = require('./romance');
 const yandere = require('./yandere');
 const shrine = require('./shrine');
-const intimate = require('./intimate');
 const forbidden = require('./forbidden');
 const collective = require('./collective');
 const betrayal = require('./betrayal');
@@ -250,13 +249,6 @@ module.exports = {
     makeOffering: shrine.makeOffering,
     renderShrine: shrine.renderShrine,
     getShrineResponse: shrine.getShrineResponse,
-
-    // Intimate Moments
-    isLateNightMode: intimate.isLateNightMode,
-    applyLateNightMode: intimate.applyLateNightMode,
-    getLateNightGreeting: intimate.getLateNightGreeting,
-    generatePillowTalk: intimate.generatePillowTalk,
-    whisperify: intimate.whisperify,
 
     // Forbidden Content
     getAvailableLore: forbidden.getAvailableLore,

@@ -22,8 +22,5 @@
     "better-sqlite3": "^9.4.3",
     "discord.js": "^14.14.1",
     "dotenv": "^16.4.1"
-  },
-  "optionalDependencies": {
-    "canvas": "^2.11.2"
   }
 }
