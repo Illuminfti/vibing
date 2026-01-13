@@ -508,38 +508,7 @@ class RitualSequence {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// CONVENIENCE FUNCTIONS
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * Create and play a gate success sequence
- */
-async function playGateSuccess(channel, gateNumber, ikaMessage, options = {}) {
-    const sequence = new RitualSequence(channel, gateNumber, options);
-    return sequence.playGateOpeningSequence(ikaMessage);
-}
-
-/**
- * Create and play a gate failure sequence
- */
-async function playGateFailure(channel, gateNumber, reason, options = {}) {
-    const sequence = new RitualSequence(channel, gateNumber, options);
-    return sequence.playFailureSequence(reason);
-}
-
-/**
- * Create and play an ascension sequence
- */
-async function playAscension(channel, options = {}) {
-    const sequence = new RitualSequence(channel, 7, options);
-    return sequence.playAscensionSequence();
-}
-
 module.exports = {
     RitualSequence,
     TIMING,
-    playGateSuccess,
-    playGateFailure,
-    playAscension,
 };

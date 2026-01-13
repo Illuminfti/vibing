@@ -12,10 +12,10 @@ const gateThemes = require('./themes/gateThemes');
 const moodOverlays = require('./themes/moodOverlays');
 
 // Builders
-const { RitualEmbedBuilder, createGateSuccessEmbed, createGateFailureEmbed, createWelcomeEmbed, createIkaEmbed, EASTER_EGGS } = require('./builders/ritualEmbed');
-const { RitualSequence, TIMING, playGateSuccess, playGateFailure, playAscension } = require('./builders/ritualSequence');
-const { RitualButtonBuilder, createConfirmCancelRow, createNavigationRow, createShareRow, createGateActionRow, BUTTON_PRESETS, GATE_EMOJIS } = require('./builders/ritualButton');
-const { RitualModalBuilder, createConfessionModal, createVowModal, createOfferingModal, createAbsenceModal, createFeedbackModal, createSimpleModal, MODAL_PRESETS, GATE_MODAL_TITLES } = require('./builders/ritualModal');
+const { RitualEmbedBuilder, createIkaEmbed, EASTER_EGGS } = require('./builders/ritualEmbed');
+const { RitualSequence, TIMING } = require('./builders/ritualSequence');
+const { RitualButtonBuilder, createConfirmCancelRow, createNavigationRow, createShareRow, createGateActionRow } = require('./builders/ritualButton');
+const { RitualModalBuilder, createConfessionModal, createVowModal, createOfferingModal, createAbsenceModal, createFeedbackModal, createSimpleModal } = require('./builders/ritualModal');
 const { PaginatedEmbed, createLorePagination, createListPagination, createGalleryPagination } = require('./builders/paginatedEmbed');
 
 // Flex Cards (Vibing Overhaul P0-Critical: Screenshot infrastructure)
@@ -46,9 +46,6 @@ module.exports = {
 
     // Embed builders
     RitualEmbedBuilder,
-    createGateSuccessEmbed,
-    createGateFailureEmbed,
-    createWelcomeEmbed,
     createIkaEmbed,
     EASTER_EGGS,
 
@@ -58,8 +55,6 @@ module.exports = {
     createNavigationRow,
     createShareRow,
     createGateActionRow,
-    BUTTON_PRESETS,
-    GATE_EMOJIS,
 
     // Modal builders
     RitualModalBuilder,
@@ -69,8 +64,6 @@ module.exports = {
     createAbsenceModal,
     createFeedbackModal,
     createSimpleModal,
-    MODAL_PRESETS,
-    GATE_MODAL_TITLES,
 
     // Paginated embeds
     PaginatedEmbed,
@@ -93,9 +86,6 @@ module.exports = {
     // Sequence builders
     RitualSequence,
     TIMING,
-    playGateSuccess,
-    playGateFailure,
-    playAscension,
 
     // Error handling
     ...errorMessages,

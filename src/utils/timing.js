@@ -125,15 +125,6 @@ function randomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-/**
- * Random delay within a range
- */
-async function randomDelay(min, max) {
-    const ms = randomInt(min, max);
-    await delay(ms);
-    return ms;
-}
-
 module.exports = {
     delay,
     responseDelay,
@@ -143,5 +134,4 @@ module.exports = {
     ScheduledTask,
     withRetry,
     randomInt,
-    randomDelay,
 };

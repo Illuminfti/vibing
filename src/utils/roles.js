@@ -89,25 +89,6 @@ async function userHasRole(guild, userId, roleId) {
 }
 
 /**
- * Get the highest gate number completed by a member
- */
-function getHighestGate(member) {
-    for (let i = 7; i >= 1; i--) {
-        if (hasRole(member, config.getGateRole(i))) {
-            return i;
-        }
-    }
-    return 0;
-}
-
-/**
- * Check if member is at or past a specific gate
- */
-function isAtGate(member, gateNumber) {
-    return getHighestGate(member) >= gateNumber;
-}
-
-/**
  * Get all members with a specific role
  */
 async function getMembersWithRole(guild, roleId) {
@@ -128,7 +109,5 @@ module.exports = {
     removeAllGateRoles,
     hasRole,
     userHasRole,
-    getHighestGate,
-    isAtGate,
     getMembersWithRole,
 };

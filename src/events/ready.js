@@ -1,7 +1,7 @@
 const { Events, ActivityType } = require('discord.js');
 const config = require('../config');
 const messages = require('../assets/messages');
-const { RitualEmbedBuilder, createIkaEmbed, createWelcomeEmbed } = require('../ui');
+const { RitualEmbedBuilder, createIkaEmbed } = require('../ui');
 const { ScheduledTask } = require('../utils/timing');
 const { gate5Ops, userOps } = require('../database');
 const { processPendingFragments } = require('../gates/fragments');

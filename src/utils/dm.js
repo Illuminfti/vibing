@@ -198,21 +198,6 @@ async function sendUnpromptedDM(client, userId, content, dmType = 'unprompted') 
     });
 }
 
-/**
- * Notify user that DMs failed and fallback was used
- * @param {Client} client - Discord client
- * @param {string} channelId - Channel to send notice in
- * @param {string} userId - User who couldn't receive DM
- */
-async function notifyDMFallback(client, channelId, userId) {
-    try {
-        const channel = await client.channels.fetch(channelId);
-        await channel.send(`<@${userId}> (i tried to dm you but couldn't. i'll talk to you here instead.)`);
-    } catch (error) {
-        console.error('✧ Could not send DM fallback notice:', error.message);
-    }
-}
-
 module.exports = {
     DM_ERROR_CODES,
     sendToUser,
@@ -220,5 +205,4 @@ module.exports = {
     canSendUnprompted,
     getDMStatus,
     sendUnpromptedDM,
-    notifyDMFallback,
 };

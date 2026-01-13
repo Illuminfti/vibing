@@ -664,41 +664,6 @@ class RitualEmbedBuilder {
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Create a success embed for gate completion
- */
-function createGateSuccessEmbed(gateNumber, userId, message, mood = 'normal') {
-    return new RitualEmbedBuilder(gateNumber, { mood, userId })
-        .setRitualTitle(`Gate ${gateNumber} Unsealed`)
-        .setIkaMessage(message)
-        .addProgressVisualization(gateNumber + 1)
-        .setRitualFooter()
-        .build();
-}
-
-/**
- * Create a failure embed for gate attempts
- */
-function createGateFailureEmbed(gateNumber, message, mood = 'normal') {
-    return new RitualEmbedBuilder('failure', { mood })
-        .setRitualTitle('· · · silence · · ·')
-        .setRitualDescription(`*the gate remains sealed*\n\n*${message}*`, false)
-        .build();
-}
-
-/**
- * Create a welcome embed for new users
- */
-function createWelcomeEmbed(userId, username) {
-    return new RitualEmbedBuilder(0, { userId, username })
-        .setRitualTitle('something stirs')
-        .setIkaMessage('...oh. someone new.')
-        .setRitualDescription('the void has noticed you.', false)
-        .addProgressVisualization(0)
-        .setRitualFooter('speak my name to begin...')
-        .build();
-}
-
-/**
  * Create an Ika message embed
  */
 function createIkaEmbed(message, mood = 'normal', gateNumber = null) {
@@ -710,9 +675,6 @@ function createIkaEmbed(message, mood = 'normal', gateNumber = null) {
 
 module.exports = {
     RitualEmbedBuilder,
-    createGateSuccessEmbed,
-    createGateFailureEmbed,
-    createWelcomeEmbed,
     createIkaEmbed,
     EASTER_EGGS,
 };
