@@ -129,7 +129,7 @@ async function postAllChamberPuzzles(client) {
     };
 
     for (const [chamberNum, puzzleData] of Object.entries(chamberPuzzles)) {
-        const channelId = config.gateChambers[chamberNum];
+        const channelId = config.getChamber(chamberNum);
         if (!channelId) {
             console.log(`✧ Chamber ${chamberNum} not configured, skipping`);
             continue;

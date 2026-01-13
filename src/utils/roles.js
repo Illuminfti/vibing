@@ -4,7 +4,7 @@ const config = require('../config');
  * Assign a gate role to a member
  */
 async function assignGateRole(member, gateNumber) {
-    const roleId = config.gateRoles[gateNumber];
+    const roleId = config.getGateRole(gateNumber);
     if (!roleId) {
         console.error(`No role configured for gate ${gateNumber}`);
         return false;
@@ -50,7 +50,7 @@ async function assignAscendedRole(member) {
 async function removeAllGateRoles(member) {
     const roleIds = [
         config.roles.lostSoul,
-        ...Object.values(config.gateRoles),
+        ...config.getAllGateRoles(),
         config.roles.ascended,
     ].filter(Boolean);
 
@@ -93,7 +93,7 @@ async function userHasRole(guild, userId, roleId) {
  */
 function getHighestGate(member) {
     for (let i = 7; i >= 1; i--) {
-        if (hasRole(member, config.gateRoles[i])) {
+        if (hasRole(member, config.getGateRole(i))) {
             return i;
         }
     }
@@ -105,20 +105,6 @@ function getHighestGate(member) {
  */
 function isAtGate(member, gateNumber) {
     return getHighestGate(member) >= gateNumber;
-}
-
-/**
- * Check if member has mod role
- */
-function isMod(member) {
-    return hasRole(member, config.roles.mod);
-}
-
-/**
- * Check if member is Ascended
- */
-function isAscended(member) {
-    return hasRole(member, config.roles.ascended);
 }
 
 /**
@@ -144,7 +130,5 @@ module.exports = {
     userHasRole,
     getHighestGate,
     isAtGate,
-    isMod,
-    isAscended,
     getMembersWithRole,
 };

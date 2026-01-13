@@ -394,18 +394,6 @@ function compressPrompt(prompt, context = {}) {
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Set cost mode
- */
-function setCostMode(mode) {
-    if (!COST_MODES[mode]) {
-        throw new Error(`Invalid cost mode: ${mode}`);
-    }
-    currentMode = mode;
-    console.log(`✧ Cost mode set to: ${mode} (${COST_MODES[mode].estimatedMonthlyCost})`);
-    return COST_MODES[mode];
-}
-
-/**
  * Get current mode config
  */
 function getCurrentMode() {
@@ -458,7 +446,6 @@ module.exports = {
     RESTING_RESPONSES,
 
     // Mode management
-    setCostMode,
     getCurrentMode,
     getCostModeStats,
 

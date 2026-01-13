@@ -303,7 +303,7 @@ async function handleBroadcast(interaction) {
 
     await interaction.deferReply({ ephemeral: true });
 
-    const roleId = config.gateRoles[gate];
+    const roleId = config.getGateRole(gate);
     const members = await getMembersWithRole(interaction.guild, roleId);
 
     let sent = 0;

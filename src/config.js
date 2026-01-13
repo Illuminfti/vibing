@@ -139,27 +139,6 @@ module.exports = {
         costMode: process.env.COST_MODE || 'ultraLow',
     },
 
-    // Gate role mapping
-    gateRoles: {
-        1: process.env.GATE_1_ROLE_ID,
-        2: process.env.GATE_2_ROLE_ID,
-        3: process.env.GATE_3_ROLE_ID,
-        4: process.env.GATE_4_ROLE_ID,
-        5: process.env.GATE_5_ROLE_ID,
-        6: process.env.GATE_6_ROLE_ID,
-        7: process.env.GATE_7_ROLE_ID,
-    },
-
-    // Gate channel mapping
-    gateChambers: {
-        1: process.env.CHAMBER_1_ID,
-        2: process.env.CHAMBER_2_ID,
-        3: process.env.CHAMBER_3_ID,
-        4: process.env.CHAMBER_4_ID,
-        5: process.env.CHAMBER_5_ID,
-        6: process.env.CHAMBER_6_ID,
-    },
-
     // Puzzle answers (loaded from .env to keep them secret)
     // These should NOT be committed to the repository
     puzzles: {
@@ -169,5 +148,20 @@ module.exports = {
         gate4Answers: process.env.GATE_4_ANSWERS
             ? process.env.GATE_4_ANSWERS.split(',').map(a => a.trim().toLowerCase())
             : [],
+    },
+
+    // Helper to get gate role by number (1-7)
+    getGateRole(gateNumber) {
+        return this.roles[`gate${gateNumber}`];
+    },
+
+    // Helper to get all gate role IDs
+    getAllGateRoles() {
+        return [1, 2, 3, 4, 5, 6, 7].map(n => this.roles[`gate${n}`]).filter(Boolean);
+    },
+
+    // Helper to get chamber channel by number (1-6)
+    getChamber(chamberNumber) {
+        return this.channels[`chamber${chamberNumber}`];
     },
 };

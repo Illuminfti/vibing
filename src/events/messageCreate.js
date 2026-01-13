@@ -437,7 +437,7 @@ async function reactWithHeart(message) {
  */
 async function postChamberPuzzle(client, chamberNumber, puzzleText) {
     try {
-        const channelId = config.gateChambers[chamberNumber];
+        const channelId = config.getChamber(chamberNumber);
         if (!channelId) return;
 
         const channel = await client.channels.fetch(channelId);
