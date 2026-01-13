@@ -4,11 +4,7 @@
  */
 
 const { loreOps } = require('../database');
-
-// Helper functions
-function randomChoice(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
+const { pickRandom } = require('../utils/timing');
 
 function weightedRandom(items) {
     const totalWeight = items.reduce((sum, item) => sum + (item.weight || 1), 0);
@@ -199,7 +195,7 @@ async function getLoreFragment(userId, category) {
     let selectedCategory = category;
     if (category === 'random') {
         const categories = Object.keys(LORE_FRAGMENTS);
-        selectedCategory = randomChoice(categories);
+        selectedCategory = pickRandom(categories);
     }
 
     const fragments = LORE_FRAGMENTS[selectedCategory];

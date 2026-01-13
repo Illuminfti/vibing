@@ -4,11 +4,7 @@
  */
 
 const { secretOps, ikaMemoryExtOps } = require('../database');
-
-// Helper function
-function randomChoice(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
+const { pickRandom } = require('../utils/timing');
 
 const SECRET_TRIGGERS = {
     // ===== EMOTIONAL SUPPORT =====
@@ -343,7 +339,7 @@ async function checkSecretTriggers(message, userId, getLoreFragment = null) {
         secretOps.discover(userId, trigger);
 
         // Handle lore drops
-        let response = randomChoice(data.responses);
+        let response = pickRandom(data.responses);
         if (response.startsWith('[LORE_DROP:') && getLoreFragment) {
             const category = response.match(/\[LORE_DROP:(\w+)\]/)[1];
             response = await getLoreFragment(userId, category);

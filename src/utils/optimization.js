@@ -854,23 +854,8 @@ function getOptimizationStats() {
 }
 
 module.exports = {
-    // Classes
-    RateLimiter,
-    ResponseCache,
-    SpamDetector,
-    UserTiering,
-    PromptOptimizer,
-
-    // Instances
+    // Instances (used by messageCreate.js)
     rateLimiter,
-    responseCache,
     spamDetector,
     userTiering,
-
-    // Functions
-    shouldProcessRequest,
-    cacheResponse,
-    getOptimizationStats,
-    applyDatabaseIndexes,
-    DATABASE_INDEXES,
 };

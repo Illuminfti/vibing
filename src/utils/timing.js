@@ -125,6 +125,14 @@ function randomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+/**
+ * Pick a random element from an array
+ */
+function pickRandom(arr) {
+    if (!arr || arr.length === 0) return null;
+    return arr[Math.floor(Math.random() * arr.length)];
+}
+
 module.exports = {
     delay,
     responseDelay,
@@ -134,4 +142,5 @@ module.exports = {
     ScheduledTask,
     withRetry,
     randomInt,
+    pickRandom,
 };

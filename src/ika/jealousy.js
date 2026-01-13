@@ -5,11 +5,7 @@
 
 const { ikaMemoryExtOps } = require('../database');
 const config = require('../config');
-
-// Helper function
-function randomChoice(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
+const { pickRandom } = require('../utils/timing');
 
 // Jealousy response templates
 const JEALOUSY_RESPONSES = {
@@ -95,7 +91,7 @@ async function checkJealousy(message, recentMessages, userId, botId) {
 
             return {
                 triggered: true,
-                response: randomChoice(responses)
+                response: pickRandom(responses)
             };
         }
     }
@@ -144,7 +140,7 @@ function checkConversationHijack(recentMessages, userId, botId) {
 
                 return {
                     triggered: true,
-                    response: randomChoice(responses)
+                    response: pickRandom(responses)
                 };
             }
         }
@@ -164,7 +160,7 @@ function getReturnResponse(userId) {
         "welcome back. i wasn't counting the minutes or anything."
     ];
 
-    return randomChoice(responses);
+    return pickRandom(responses);
 }
 
 module.exports = {

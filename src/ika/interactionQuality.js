@@ -148,30 +148,6 @@ function hasVariedVocabulary(words) {
     return varietyRatio > 0.6; // At least 60% unique words
 }
 
-// Quality tiers with thresholds (single source of truth)
-const QUALITY_TIERS = [
-    { min: 1.8, tier: 'exceptional', indicator: '⭐⭐⭐' },
-    { min: 1.4, tier: 'high', indicator: '⭐⭐⭐' },
-    { min: 1.1, tier: 'good', indicator: '⭐⭐' },
-    { min: 0.9, tier: 'normal', indicator: '⭐⭐' },
-    { min: 0.7, tier: 'low', indicator: '⭐' },
-    { min: 0, tier: 'minimal', indicator: '⭐' },
-];
-
-function getQualityInfo(multiplier) {
-    return QUALITY_TIERS.find(t => multiplier >= t.min) || QUALITY_TIERS[QUALITY_TIERS.length - 1];
-}
-
-function getQualityTier(multiplier) {
-    return getQualityInfo(multiplier).tier;
-}
-
-function getQualityIndicator(multiplier) {
-    return getQualityInfo(multiplier).indicator;
-}
-
 module.exports = {
     scoreInteractionQuality,
-    getQualityTier,
-    getQualityIndicator,
 };

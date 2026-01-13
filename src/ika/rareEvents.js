@@ -4,11 +4,7 @@
  */
 
 const { rareEventOps, ikaMemoryOps } = require('../database');
-
-// Helper function
-function randomChoice(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
+const { pickRandom } = require('../utils/timing');
 
 // Vibing Overhaul P2-Medium: Enhanced rare event triggers for viral moments
 const VIRAL_MARKERS = {
@@ -302,7 +298,7 @@ async function checkRareEvents(message, userId, context = []) {
             rareEventOps.log(userId, eventName, message.content);
 
             // Process response with username replacement
-            let response = randomChoice(event.responses);
+            let response = pickRandom(event.responses);
             if (response.includes('{username}')) {
                 const displayName = memory?.nickname || memory?.username || message.author?.username || 'you';
                 response = response.replace('{username}', displayName);

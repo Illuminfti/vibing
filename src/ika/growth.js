@@ -4,11 +4,7 @@
  */
 
 const { ikaMemoryOps, ikaMemoryExtOps } = require('../database');
-
-// Helper function
-function randomChoice(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
+const { pickRandom } = require('../utils/timing');
 
 const GROWTH_MILESTONES = {
     firstMessage: {
@@ -135,7 +131,7 @@ async function checkGrowthMilestone(userId) {
                 return {
                     milestone: name,
                     type: 'interaction',
-                    response: randomChoice(milestone.responses)
+                    response: pickRandom(milestone.responses)
                 };
             }
         }
@@ -157,7 +153,7 @@ async function checkGrowthMilestone(userId) {
                     return {
                         milestone: name,
                         type: 'time',
-                        response: randomChoice(milestone.responses)
+                        response: pickRandom(milestone.responses)
                     };
                 }
             }
@@ -225,7 +221,7 @@ function recognizeAchievement(type) {
     };
 
     const responses = achievements[type];
-    return responses ? randomChoice(responses) : null;
+    return responses ? pickRandom(responses) : null;
 }
 
 module.exports = {

@@ -4,11 +4,7 @@
  */
 
 const { ikaMemoryExtOps } = require('../database');
-
-// Helper function
-function randomChoice(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
+const { pickRandom } = require('../utils/timing');
 
 // Patterns that trigger protection mode
 const PROTECTION_TRIGGERS = [
@@ -72,7 +68,7 @@ function checkProtectionTrigger(content) {
         if (pattern.test(content)) {
             return {
                 shouldProtect: true,
-                response: randomChoice(PROTECTION_RESPONSES)
+                response: pickRandom(PROTECTION_RESPONSES)
             };
         }
     }
@@ -90,14 +86,14 @@ async function handleProtectionMoment(userId) {
     ikaMemoryExtOps.incrementProtection(userId);
 
     // Return response
-    return randomChoice(PROTECTION_RESPONSES);
+    return pickRandom(PROTECTION_RESPONSES);
 }
 
 /**
  * Get gentle follow-up after protection
  */
 function getGentleFollowup() {
-    return randomChoice(GENTLE_FOLLOWUPS);
+    return pickRandom(GENTLE_FOLLOWUPS);
 }
 
 /**
@@ -122,7 +118,7 @@ function checkSelfDoubt(content) {
             ];
             return {
                 triggered: true,
-                response: randomChoice(responses)
+                response: pickRandom(responses)
             };
         }
     }

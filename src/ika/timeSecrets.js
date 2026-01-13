@@ -4,11 +4,7 @@
  */
 
 const { timeSecretOps } = require('../database');
-
-// Helper function
-function randomChoice(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
+const { pickRandom } = require('../utils/timing');
 
 const TIME_SECRETS = {
     // 4:47 AM - The 47 reference
@@ -145,7 +141,7 @@ async function checkTimeSecrets(userId) {
         // Log
         timeSecretOps.log(userId, secretName);
 
-        const message = secret.message || randomChoice(secret.messages);
+        const message = secret.message || pickRandom(secret.messages);
         return { triggered: true, message, secret: secretName };
     }
 
@@ -181,7 +177,7 @@ function checkFirstOfDay(userId) {
         "morning. or whatever time it is for you."
     ];
 
-    return { isFirst: true, message: randomChoice(messages) };
+    return { isFirst: true, message: pickRandom(messages) };
 }
 
 /**

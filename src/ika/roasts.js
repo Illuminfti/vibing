@@ -4,11 +4,7 @@
  */
 
 const { ikaMemoryExtOps } = require('../database');
-
-// Helper function
-function randomChoice(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
+const { pickRandom } = require('../utils/timing');
 
 const ROAST_TRIGGERS = {
     selfDeprecating: {
@@ -174,7 +170,7 @@ function checkRoastTrigger(content) {
             if (pattern.test(content) && Math.random() < data.chance) {
                 return {
                     shouldRoast: true,
-                    response: randomChoice(data.responses),
+                    response: pickRandom(data.responses),
                     type
                 };
             }
@@ -197,7 +193,7 @@ async function handleRoast(userId, type) {
     // Return appropriate response
     const data = ROAST_TRIGGERS[type];
     if (data) {
-        return randomChoice(data.responses);
+        return pickRandom(data.responses);
     }
 
     // Fallback generic roasts
@@ -209,7 +205,7 @@ async function handleRoast(userId, type) {
         "anyway"
     ];
 
-    return randomChoice(genericRoasts);
+    return pickRandom(genericRoasts);
 }
 
 /**
@@ -228,7 +224,7 @@ function getComeback(content) {
         if (trigger.pattern.test(content)) {
             return {
                 hasComeback: true,
-                response: randomChoice(trigger.responses)
+                response: pickRandom(trigger.responses)
             };
         }
     }
@@ -247,7 +243,7 @@ function getSelfRoastIntervention() {
         "i didn't give you permission to be mean to my favorite person"
     ];
 
-    return randomChoice(interventions);
+    return pickRandom(interventions);
 }
 
 module.exports = {

@@ -4,11 +4,7 @@
  */
 
 const { ritualOps, ikaMemoryExtOps } = require('../database');
-
-// Helper function
-function randomChoice(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
+const { pickRandom } = require('../utils/timing');
 
 const DAILY_RITUALS = {
     morningGreeting: {
@@ -177,7 +173,7 @@ async function checkDailyRituals(channel, getMostActive = null) {
         if (ritual.getMessage) {
             message = await ritual.getMessage(getMostActive);
         } else {
-            message = randomChoice(ritual.messages);
+            message = pickRandom(ritual.messages);
         }
 
         // Log ritual
@@ -198,13 +194,13 @@ async function checkDailyRituals(channel, getMostActive = null) {
  */
 function getDiscussionPrompt(type = null) {
     if (type && DISCUSSION_PROMPTS[type]) {
-        return randomChoice(DISCUSSION_PROMPTS[type]);
+        return pickRandom(DISCUSSION_PROMPTS[type]);
     }
 
     // Random type
     const types = Object.keys(DISCUSSION_PROMPTS);
-    const randomType = randomChoice(types);
-    return randomChoice(DISCUSSION_PROMPTS[randomType]);
+    const randomType = pickRandom(types);
+    return pickRandom(DISCUSSION_PROMPTS[randomType]);
 }
 
 /**
@@ -251,7 +247,7 @@ function getRitualResponse(ritualType) {
     };
 
     const typeResponses = responses[ritualType] || responses.dailyQuestion;
-    return randomChoice(typeResponses);
+    return pickRandom(typeResponses);
 }
 
 module.exports = {
